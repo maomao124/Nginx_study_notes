@@ -449,9 +449,440 @@ root@4f3ddbf99a0e:/var/log/nginx#
 
 ## Linux安装
 
-准备一个内核为2.6及以上版本的操作系统，因为linux2.6及以上内核才支持epoll,而Nginx需要解决高并发压力问题是需要用到epoll，所以我们需要有这样的版本要求
+
 
 Linux：centOS
 
 
+
+### 第一步：准备Linux系统
+
+准备一个内核为2.6及以上版本的操作系统，因为linux2.6及以上内核才支持epoll,而Nginx需要解决高并发压力问题是需要用到epoll，所以我们需要有这样的版本要求
+
+确保centos能联网
+
+确认关闭防火墙
+
+
+
+这里为了方便，使用docker的centOS来演示
+
+```sh
+PS C:\Users\mao\Desktop> docker search centos
+NAME                                         DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+centos                                       DEPRECATED; The official build of CentOS.       7569      [OK]
+kasmweb/centos-7-desktop                     CentOS 7 desktop for Kasm Workspaces            36
+couchbase/centos7-systemd                    centos7-systemd images with additional debug…   7                    [OK]
+dokken/centos-7                              CentOS 7 image for kitchen-dokken               6
+dokken/centos-stream-9                                                                       4
+dokken/centos-stream-8                                                                       4
+continuumio/centos5_gcc5_base                                                                3
+eclipse/centos_jdk8                          CentOS, JDK8, Maven 3, git, curl, nmap, mc, …   3                    [OK]
+dokken/centos-8                              CentOS 8 image for kitchen-dokken               3
+adoptopenjdk/centos7_build_image                                                             1
+spack/centos7                                CentOS 7 with Spack preinstalled                1
+spack/centos6                                CentOS 6 with Spack preinstalled                1
+atlas/centos7-atlasos                        ATLAS CentOS 7 Software Development OS          0
+couchbase/centos-72-java-sdk                                                                 0
+ustclug/centos                               Official CentOS Image with USTC Mirror          0
+couchbase/centos-72-jenkins-core                                                             0
+dokken/centos-6                              CentOS 6 image for kitchen-dokken               0
+datadog/centos-i386                                                                          0
+couchbase/centos-70-sdk-build                                                                0
+couchbase/centos-69-sdk-build                                                                0
+couchbase/centos-69-sdk-nodevtoolset-build                                                   0
+bitnami/centos-extras-base                                                                   0
+corpusops/centos-bare                        https://github.com/corpusops/docker-images/     0
+bitnami/centos-base-buildpack                Centos base compilation image                   0                    [OK]
+corpusops/centos                             centos corpusops baseimage                      0
+PS C:\Users\mao\Desktop> docker pull centos
+Using default tag: latest
+latest: Pulling from library/centos
+a1d0c7532777: Pull complete
+Digest: sha256:a27fd8080b517143cbbbab9dfb7c8571c40d67d534bbdee55bd6c473f432b177
+Status: Downloaded newer image for centos:latest
+docker.io/library/centos:latest
+PS C:\Users\mao\Desktop> docker images
+REPOSITORY          TAG       IMAGE ID       CREATED         SIZE
+nginx               latest    6efc10a0510f   2 weeks ago     142MB
+redislabs/rebloom   latest    66d626dc1387   17 months ago   147MB
+centos              latest    5d0da3dc9764   19 months ago   231MB
+PS C:\Users\mao\Desktop>
+```
+
+
+
+```sh
+docker run -it --name centos -p 8090:80 centos
+```
+
+
+
+
+
+### 第二步：更换yum源
+
+```sh
+cd /etc/yum.repos.d/
+```
+
+```sh
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+```
+
+```sh
+yum makecache
+```
+
+```sh
+yum update -y
+```
+
+
+
+
+
+### 第三步：安装yum-utils
+
+```sh
+yum install -y yum-utils
+```
+
+```sh
+[root@b402c92dee3f /]# yum install -y yum-utils
+Failed to set locale, defaulting to C.UTF-8
+Last metadata expiration check: 0:06:27 ago on Fri Apr 28 06:56:11 2023.
+Dependencies resolved.
+================================================================================================================================================
+ Package                                       Architecture                Version                            Repository                   Size
+================================================================================================================================================
+Installing:
+ yum-utils                                     noarch                      4.0.21-3.el8                       baseos                       73 k
+Installing dependencies:
+ dbus-glib                                     x86_64                      0.110-2.el8                        baseos                      127 k
+ dnf-plugins-core                              noarch                      4.0.21-3.el8                       baseos                       70 k
+ python3-dateutil                              noarch                      1:2.6.1-6.el8                      baseos                      251 k
+ python3-dbus                                  x86_64                      1.2.4-15.el8                       baseos                      134 k
+ python3-dnf-plugins-core                      noarch                      4.0.21-3.el8                       baseos                      234 k
+ python3-six                                   noarch                      1.11.0-8.el8                       baseos                       38 k
+
+Transaction Summary
+================================================================================================================================================
+Install  7 Packages
+
+Total download size: 927 k
+Installed size: 2.3 M
+Downloading Packages:
+(1/7): dnf-plugins-core-4.0.21-3.el8.noarch.rpm                                                                  51 kB/s |  70 kB     00:01
+(2/7): dbus-glib-0.110-2.el8.x86_64.rpm                                                                          78 kB/s | 127 kB     00:01
+(3/7): python3-dateutil-2.6.1-6.el8.noarch.rpm                                                                  135 kB/s | 251 kB     00:01
+(4/7): python3-dbus-1.2.4-15.el8.x86_64.rpm                                                                     218 kB/s | 134 kB     00:00
+(5/7): python3-six-1.11.0-8.el8.noarch.rpm                                                                       87 kB/s |  38 kB     00:00
+(6/7): python3-dnf-plugins-core-4.0.21-3.el8.noarch.rpm                                                         316 kB/s | 234 kB     00:00
+(7/7): yum-utils-4.0.21-3.el8.noarch.rpm                                                                        170 kB/s |  73 kB     00:00
+------------------------------------------------------------------------------------------------------------------------------------------------
+Total                                                                                                           385 kB/s | 927 kB     00:02
+warning: /var/cache/dnf/baseos-398269605bdca3dc/packages/dbus-glib-0.110-2.el8.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID 8483c65d: NOKEY
+CentOS Linux 8 - BaseOS                                                                                         1.6 MB/s | 1.6 kB     00:00
+Importing GPG key 0x8483C65D:
+ Userid     : "CentOS (CentOS Official Signing Key) <security@centos.org>"
+ Fingerprint: 99DB 70FA E1D7 CE22 7FB6 4882 05B5 55B3 8483 C65D
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-centosofficial
+Key imported successfully
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                                                                                        1/1
+  Installing       : python3-six-1.11.0-8.el8.noarch                                                                                        1/7
+  Installing       : python3-dateutil-1:2.6.1-6.el8.noarch                                                                                  2/7
+  Installing       : dbus-glib-0.110-2.el8.x86_64                                                                                           3/7
+  Running scriptlet: dbus-glib-0.110-2.el8.x86_64                                                                                           3/7
+  Installing       : python3-dbus-1.2.4-15.el8.x86_64                                                                                       4/7
+  Installing       : python3-dnf-plugins-core-4.0.21-3.el8.noarch                                                                           5/7
+  Installing       : dnf-plugins-core-4.0.21-3.el8.noarch                                                                                   6/7
+  Installing       : yum-utils-4.0.21-3.el8.noarch                                                                                          7/7
+  Running scriptlet: yum-utils-4.0.21-3.el8.noarch                                                                                          7/7
+  Verifying        : dbus-glib-0.110-2.el8.x86_64                                                                                           1/7
+  Verifying        : dnf-plugins-core-4.0.21-3.el8.noarch                                                                                   2/7
+  Verifying        : python3-dateutil-1:2.6.1-6.el8.noarch                                                                                  3/7
+  Verifying        : python3-dbus-1.2.4-15.el8.x86_64                                                                                       4/7
+  Verifying        : python3-dnf-plugins-core-4.0.21-3.el8.noarch                                                                           5/7
+  Verifying        : python3-six-1.11.0-8.el8.noarch                                                                                        6/7
+  Verifying        : yum-utils-4.0.21-3.el8.noarch                                                                                          7/7
+
+Installed:
+  dbus-glib-0.110-2.el8.x86_64              dnf-plugins-core-4.0.21-3.el8.noarch                  python3-dateutil-1:2.6.1-6.el8.noarch
+  python3-dbus-1.2.4-15.el8.x86_64          python3-dnf-plugins-core-4.0.21-3.el8.noarch          python3-six-1.11.0-8.el8.noarch
+  yum-utils-4.0.21-3.el8.noarch
+
+Complete!
+[root@b402c92dee3f /]#
+```
+
+
+
+
+
+### 第四步：yum进行安装
+
+```sh
+yum install -y nginx
+```
+
+```sh
+[root@b402c92dee3f /]# yum install -y nginx
+Failed to set locale, defaulting to C.UTF-8
+Last metadata expiration check: 0:08:16 ago on Fri Apr 28 06:56:11 2023.
+Dependencies resolved.
+================================================================================================================================================
+ Package                                  Architecture        Version                                              Repository              Size
+================================================================================================================================================
+Installing:
+ nginx                                    x86_64              1:1.14.1-9.module_el8.0.0+184+e34fea82               appstream              570 k
+Upgrading:
+ ncurses-base                             noarch              6.1-9.20180224.el8                                   baseos                  81 k
+ ncurses-libs                             x86_64              6.1-9.20180224.el8                                   baseos                 334 k
+ openssl-libs                             x86_64              1:1.1.1k-5.el8_5                                     baseos                 1.5 M
+Installing dependencies:
+ dejavu-fonts-common                      noarch              2.35-7.el8                                           baseos                  74 k
+ dejavu-sans-fonts                        noarch              2.35-7.el8                                           baseos                 1.6 M
+ fontconfig                               x86_64              2.13.1-4.el8                                         baseos                 274 k
+ fontpackages-filesystem                  noarch              1.44-22.el8                                          baseos                  16 k
+ freetype                                 x86_64              2.9.1-4.el8_3.1                                      baseos                 394 k
+ gd                                       x86_64              2.2.5-7.el8                                          appstream              144 k
+ groff-base                               x86_64              1.22.3-18.el8                                        baseos                 1.0 M
+ jbigkit-libs                             x86_64              2.1-14.el8                                           appstream               55 k
+ libX11                                   x86_64              1.6.8-5.el8                                          appstream              611 k
+ libX11-common                            noarch              1.6.8-5.el8                                          appstream              158 k
+ libXau                                   x86_64              1.0.9-3.el8                                          appstream               37 k
+ libXpm                                   x86_64              3.5.12-8.el8                                         appstream               58 k
+ libjpeg-turbo                            x86_64              1.5.3-12.el8                                         appstream              157 k
+ libpng                                   x86_64              2:1.6.34-5.el8                                       baseos                 126 k
+ libtiff                                  x86_64              4.0.9-20.el8                                         appstream              188 k
+ libwebp                                  x86_64              1.0.0-5.el8                                          appstream              272 k
+ libxcb                                   x86_64              1.13.1-1.el8                                         appstream              229 k
+ libxslt                                  x86_64              1.1.32-6.el8                                         baseos                 250 k
+ ncurses                                  x86_64              6.1-9.20180224.el8                                   baseos                 387 k
+ nginx-all-modules                        noarch              1:1.14.1-9.module_el8.0.0+184+e34fea82               appstream               23 k
+ nginx-filesystem                         noarch              1:1.14.1-9.module_el8.0.0+184+e34fea82               appstream               24 k
+ nginx-mod-http-image-filter              x86_64              1:1.14.1-9.module_el8.0.0+184+e34fea82               appstream               35 k
+ nginx-mod-http-perl                      x86_64              1:1.14.1-9.module_el8.0.0+184+e34fea82               appstream               45 k
+ nginx-mod-http-xslt-filter               x86_64              1:1.14.1-9.module_el8.0.0+184+e34fea82               appstream               33 k
+ nginx-mod-mail                           x86_64              1:1.14.1-9.module_el8.0.0+184+e34fea82               appstream               64 k
+ nginx-mod-stream                         x86_64              1:1.14.1-9.module_el8.0.0+184+e34fea82               appstream               85 k
+ openssl                                  x86_64              1:1.1.1k-5.el8_5                                     baseos                 709 k
+ perl-Carp                                noarch              1.42-396.el8                                         baseos                  30 k
+ perl-Data-Dumper                         x86_64              2.167-399.el8                                        baseos                  58 k
+ perl-Digest                              noarch              1.17-395.el8                                         appstream               27 k
+ perl-Digest-MD5                          x86_64              2.55-396.el8                                         appstream               37 k
+ perl-Encode                              x86_64              4:2.97-3.el8                                         baseos                 1.5 M
+ perl-Errno                               x86_64              1.28-420.el8                                         baseos                  76 k
+ perl-Exporter                            noarch              5.72-396.el8                                         baseos                  34 k
+ perl-File-Path                           noarch              2.15-2.el8                                           baseos                  38 k
+ perl-File-Temp                           noarch              0.230.600-1.el8                                      baseos                  63 k
+ perl-Getopt-Long                         noarch              1:2.50-4.el8                                         baseos                  63 k
+ perl-HTTP-Tiny                           noarch              0.074-1.el8                                          baseos                  58 k
+ perl-IO                                  x86_64              1.38-420.el8                                         baseos                 142 k
+ perl-MIME-Base64                         x86_64              3.15-396.el8                                         baseos                  31 k
+ perl-Net-SSLeay                          x86_64              1.88-1.module_el8.3.0+410+ff426aa3                   appstream              379 k
+ perl-PathTools                           x86_64              3.74-1.el8                                           baseos                  90 k
+ perl-Pod-Escapes                         noarch              1:1.07-395.el8                                       baseos                  20 k
+ perl-Pod-Perldoc                         noarch              3.28-396.el8                                         baseos                  86 k
+ perl-Pod-Simple                          noarch              1:3.35-395.el8                                       baseos                 213 k
+ perl-Pod-Usage                           noarch              4:1.69-395.el8                                       baseos                  34 k
+ perl-Scalar-List-Utils                   x86_64              3:1.49-2.el8                                         baseos                  68 k
+ perl-Socket                              x86_64              4:2.027-3.el8                                        baseos                  59 k
+ perl-Storable                            x86_64              1:3.11-3.el8                                         baseos                  98 k
+ perl-Term-ANSIColor                      noarch              4.06-396.el8                                         baseos                  46 k
+ perl-Term-Cap                            noarch              1.17-395.el8                                         baseos                  23 k
+ perl-Text-ParseWords                     noarch              3.30-395.el8                                         baseos                  18 k
+ perl-Text-Tabs+Wrap                      noarch              2013.0523-395.el8                                    baseos                  24 k
+ perl-Time-Local                          noarch              1:1.280-1.el8                                        baseos                  34 k
+ perl-URI                                 noarch              1.73-3.el8                                           appstream              116 k
+ perl-Unicode-Normalize                   x86_64              1.25-396.el8                                         baseos                  82 k
+ perl-constant                            noarch              1.33-396.el8                                         baseos                  25 k
+ perl-interpreter                         x86_64              4:5.26.3-420.el8                                     baseos                 6.3 M
+ perl-libnet                              noarch              3.11-3.el8                                           appstream              121 k
+ perl-libs                                x86_64              4:5.26.3-420.el8                                     baseos                 1.6 M
+ perl-macros                              x86_64              4:5.26.3-420.el8                                     baseos                  72 k
+ perl-parent                              noarch              1:0.237-1.el8                                        baseos                  20 k
+ perl-podlators                           noarch              4.11-1.el8                                           baseos                 118 k
+ perl-threads                             x86_64              1:2.21-2.el8                                         baseos                  61 k
+ perl-threads-shared                      x86_64              1.58-2.el8                                           baseos                  48 k
+Installing weak dependencies:
+ openssl-pkcs11                           x86_64              0.4.10-2.el8                                         baseos                  66 k
+ perl-IO-Socket-IP                        noarch              0.39-5.el8                                           appstream               47 k
+ perl-IO-Socket-SSL                       noarch              2.066-4.module_el8.3.0+410+ff426aa3                  appstream              298 k
+ perl-Mozilla-CA                          noarch              20160104-7.module_el8.3.0+416+dee7bcef               appstream               15 k
+Enabling module streams:
+ nginx                                                        1.14
+ perl                                                         5.26
+ perl-IO-Socket-SSL                                           2.066
+ perl-libwww-perl                                             6.34
+
+Transaction Summary
+================================================================================================================================================
+Install  70 Packages
+Upgrade   3 Packages
+
+Total download size: 22 M
+Downloading Packages:
+(1/73): jbigkit-libs-2.1-14.el8.x86_64.rpm                                                                       39 kB/s |  55 kB     00:01
+(2/73): gd-2.2.5-7.el8.x86_64.rpm                                                                                86 kB/s | 144 kB     00:01
+(3/73): libXau-1.0.9-3.el8.x86_64.rpm                                                                            81 kB/s |  37 kB     00:00
+(4/73): libX11-common-1.6.8-5.el8.noarch.rpm                                                                    138 kB/s | 158 kB     00:01
+(5/73): libXpm-3.5.12-8.el8.x86_64.rpm                                                                          120 kB/s |  58 kB     00:00
+(6/73): libtiff-4.0.9-20.el8.x86_64.rpm                                                                         279 kB/s | 188 kB     00:00
+(7/73): libjpeg-turbo-1.5.3-12.el8.x86_64.rpm                                                                   192 kB/s | 157 kB     00:00
+(8/73): libxcb-1.13.1-1.el8.x86_64.rpm                                                                          456 kB/s | 229 kB     00:00
+......
+(70/73): perl-libs-5.26.3-420.el8.x86_64.rpm                                                                    361 kB/s | 1.6 MB     00:04
+(71/73): ncurses-libs-6.1-9.20180224.el8.x86_64.rpm                                                             657 kB/s | 334 kB     00:00
+(72/73): perl-threads-shared-1.58-2.el8.x86_64.rpm                                                               20 kB/s |  48 kB     00:02
+(73/73): openssl-libs-1.1.1k-5.el8_5.x86_64.rpm                                                                 331 kB/s | 1.5 MB     00:04
+------------------------------------------------------------------------------------------------------------------------------------------------
+Total                                                                                                           713 kB/s |  22 MB     00:30
+Running transaction check
+Transaction check succeeded.
+Running transaction test
+Transaction test succeeded.
+Running transaction
+  Preparing        :                                                                                                                        1/1
+  Upgrading        : openssl-libs-1:1.1.1k-5.el8_5.x86_64                                                                                  1/76
+  Running scriptlet: openssl-libs-1:1.1.1k-5.el8_5.x86_64                                                                                  1/76
+  Installing       : openssl-1:1.1.1k-5.el8_5.x86_64                                                                                       2/76
+  Installing       : openssl-pkcs11-0.4.10-2.el8.x86_64                                                                                    3/76
+  Installing       : libpng-2:1.6.34-5.el8.x86_64                                                                           ......                                                                           74/76
+  Cleanup          : ncurses-base-6.1-7.20180224.el8.noarch                                                                               75/76
+  Cleanup          : openssl-libs-1:1.1.1g-15.el8_3.x86_64                                                                                76/76
+  Running scriptlet: openssl-libs-1:1.1.1g-15.el8_3.x86_64                                                                                76/76
+  Running scriptlet: fontconfig-2.13.1-4.el8.x86_64                                                                                       76/76
+  Verifying        : gd-2.2.5-7.el8.x86_64                                                                                                 1/76
+  Verifying        : jbigkit-libs-2.1-14.el8.x86_64                                                                                        2/76
+  Verifying        : libX11-1.6.8-5.el8.x86_64                                                                                             3/76
+  Verifying        : libX11-common-1.6.8-5.el8.noarch                                                                                      4/76
+......                                                                            74/76
+  Verifying        : openssl-libs-1:1.1.1k-5.el8_5.x86_64                                                                                 75/76
+  Verifying        : openssl-libs-1:1.1.1g-15.el8_3.x86_64                                                                                76/76
+
+Upgraded:
+  ncurses-base-6.1-9.20180224.el8.noarch          ncurses-libs-6.1-9.20180224.el8.x86_64          openssl-libs-1:1.1.1k-5.el8_5.x86_64
+Installed:
+  dejavu-fonts-common-2.35-7.el8.noarch                                      dejavu-sans-fonts-2.35-7.el8.noarch
+  fontconfig-2.13.1-4.el8.x86_64                                             fontpackages-filesystem-1.44-22.el8.noarch
+  freetype-2.9.1-4.el8_3.1.x86_64                                            gd-2.2.5-7.el8.x86_64
+  groff-base-1.22.3-18.el8.x86_64                                            jbigkit-libs-2.1-14.el8.x86_64
+  libX11-1.6.8-5.el8.x86_64                                                  libX11-common-1.6.8-5.el8.noarch
+  libXau-1.0.9-3.el8.x86_64                                                  libXpm-3.5.12-8.el8.x86_64
+  libjpeg-turbo-1.5.3-12.el8.x86_64                                          libpng-2:1.6.34-5.el8.x86_64
+  libtiff-4.0.9-20.el8.x86_64                                                libwebp-1.0.0-5.el8.x86_64
+  libxcb-1.13.1-1.el8.x86_64                                                 libxslt-1.1.32-6.el8.x86_64
+  ncurses-6.1-9.20180224.el8.x86_64                                          nginx-1:1.14.1-9.module_el8.0.0+184+e34fea82.x86_64
+  nginx-all-modules-1:1.14.1-9.module_el8.0.0+184+e34fea82.noarch            nginx-filesystem-1:1.14.1-9.module_el8.0.0+184+e34fea82.noarch
+  nginx-mod-http-image-filter-1:1.14.1-9.module_el8.0.0+184+e34fea82.x86_64  nginx-mod-http-perl-1:1.14.1-9.module_el8.0.0+184+e34fea82.x86_64
+  nginx-mod-http-xslt-filter-1:1.14.1-9.module_el8.0.0+184+e34fea82.x86_64   nginx-mod-mail-1:1.14.1-9.module_el8.0.0+184+e34fea82.x86_64
+  nginx-mod-stream-1:1.14.1-9.module_el8.0.0+184+e34fea82.x86_64             openssl-1:1.1.1k-5.el8_5.x86_64
+  openssl-pkcs11-0.4.10-2.el8.x86_64                                         perl-Carp-1.42-396.el8.noarch
+  perl-Data-Dumper-2.167-399.el8.x86_64                                      perl-Digest-1.17-395.el8.noarch
+  perl-Digest-MD5-2.55-396.el8.x86_64                                        perl-Encode-4:2.97-3.el8.x86_64
+  perl-Errno-1.28-420.el8.x86_64                                             perl-Exporter-5.72-396.el8.noarch
+  perl-File-Path-2.15-2.el8.noarch                                           perl-File-Temp-0.230.600-1.el8.noarch
+  perl-Getopt-Long-1:2.50-4.el8.noarch                                       perl-HTTP-Tiny-0.074-1.el8.noarch
+  perl-IO-1.38-420.el8.x86_64                                                perl-IO-Socket-IP-0.39-5.el8.noarch
+  perl-IO-Socket-SSL-2.066-4.module_el8.3.0+410+ff426aa3.noarch              perl-MIME-Base64-3.15-396.el8.x86_64
+  perl-Mozilla-CA-20160104-7.module_el8.3.0+416+dee7bcef.noarch              perl-Net-SSLeay-1.88-1.module_el8.3.0+410+ff426aa3.x86_64
+  perl-PathTools-3.74-1.el8.x86_64                                           perl-Pod-Escapes-1:1.07-395.el8.noarch
+  perl-Pod-Perldoc-3.28-396.el8.noarch                                       perl-Pod-Simple-1:3.35-395.el8.noarch
+  perl-Pod-Usage-4:1.69-395.el8.noarch                                       perl-Scalar-List-Utils-3:1.49-2.el8.x86_64
+  perl-Socket-4:2.027-3.el8.x86_64                                           perl-Storable-1:3.11-3.el8.x86_64
+  perl-Term-ANSIColor-4.06-396.el8.noarch                                    perl-Term-Cap-1.17-395.el8.noarch
+  perl-Text-ParseWords-3.30-395.el8.noarch                                   perl-Text-Tabs+Wrap-2013.0523-395.el8.noarch
+  perl-Time-Local-1:1.280-1.el8.noarch                                       perl-URI-1.73-3.el8.noarch
+  perl-Unicode-Normalize-1.25-396.el8.x86_64                                 perl-constant-1.33-396.el8.noarch
+  perl-interpreter-4:5.26.3-420.el8.x86_64                                   perl-libnet-3.11-3.el8.noarch
+  perl-libs-4:5.26.3-420.el8.x86_64                                          perl-macros-4:5.26.3-420.el8.x86_64
+  perl-parent-1:0.237-1.el8.noarch                                           perl-podlators-4.11-1.el8.noarch
+  perl-threads-1:2.21-2.el8.x86_64                                           perl-threads-shared-1.58-2.el8.x86_64
+
+Complete!
+[root@b402c92dee3f /]#
+```
+
+
+
+
+
+### 第五步：查看nginx的安装位置
+
+```sh
+whereis nginx
+```
+
+```sh
+[root@b402c92dee3f /]# whereis nginx
+nginx: /usr/sbin/nginx /usr/lib64/nginx /etc/nginx /usr/share/nginx /usr/share/man/man3/nginx.3pm.gz /usr/share/man/man8/nginx.8.gz
+[root@b402c92dee3f /]# type nginx
+nginx is /usr/sbin/nginx
+[root@b402c92dee3f /]#
+```
+
+
+
+
+
+### 第六步：进入可执行文件目录
+
+```sh
+cd /usr/sbin
+```
+
+
+
+### 第七步：启动
+
+```sh
+./nginx
+```
+
+
+
+http://localhost:8090/
+
+![image-20230428151227983](img/Nginx学习笔记/image-20230428151227983.png)
+
+
+
+### 第八步：查看日志
+
+```sh
+[root@b402c92dee3f sbin]# cd /var/log/nginx
+[root@b402c92dee3f nginx]# ll
+bash: ll: command not found
+[root@b402c92dee3f nginx]# ls -l
+total 8
+-rw-r--r-- 1 root root 1147 Apr 28 07:12 access.log
+-rw-r--r-- 1 root root  248 Apr 28 07:10 error.log
+[root@b402c92dee3f nginx]# cat access.log
+172.17.0.1 - - [28/Apr/2023:07:10:52 +0000] "GET / HTTP/1.1" 200 4057 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+172.17.0.1 - - [28/Apr/2023:07:10:52 +0000] "GET /nginx-logo.png HTTP/1.1" 200 368 "http://localhost:8090/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+172.17.0.1 - - [28/Apr/2023:07:10:52 +0000] "GET /poweredby.png HTTP/1.1" 200 4148 "http://localhost:8090/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+172.17.0.1 - - [28/Apr/2023:07:10:52 +0000] "GET /favicon.ico HTTP/1.1" 404 3971 "http://localhost:8090/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+172.17.0.1 - - [28/Apr/2023:07:12:34 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+[root@b402c92dee3f nginx]# cat error.log
+2023/04/28 07:10:52 [error] 117#0: *2 open() "/usr/share/nginx/html/favicon.ico" failed (2: No such file or directory), client: 172.17.0.1, server: _, request: "GET /favicon.ico HTTP/1.1", host: "localhost:8090", referrer: "http://localhost:8090/"
+[root@b402c92dee3f nginx]#
+```
+
+
+
+
+
+
+
+
+
+## Windows安装
 
