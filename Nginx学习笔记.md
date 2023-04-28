@@ -137,6 +137,28 @@ Nginx提供邮件代理服务也是其基本开发需求之一，主要包含以
 
 
 
+## Nginx官网
+
+Nginx的官方网站为: http://nginx.org
+
+![image-20230428134411492](img/Nginx学习笔记/image-20230428134411492.png)
+
+
+
+Nginx的官方下载网站为http://nginx.org/en/download.html
+
+![image-20230428134440063](img/Nginx学习笔记/image-20230428134440063.png)
+
+
+
+* **Mainline version**：主线版本，开发Nginx的最新版本
+* **Stable version**：稳定版本
+* **Legacy versions**：旧版本
+
+
+
+
+
 
 
 
@@ -174,6 +196,262 @@ Lighttpd是德国的一个开源的Web服务器软件，它和Nginx一样，都�
 Google Servers，Weblogic, Webshpere(IBM)...
 
 
+
+
+
+
+
+
+
+# Nginx安装与运行
+
+## Docker安装
+
+### 第一步：搜索镜像
+
+命令：
+
+```sh
+docker search nginx
+```
+
+```sh
+PS C:\Users\mao\Desktop> docker search nginx
+NAME                                              DESCRIPTION                                     STARS     OFFICIAL   AUTOMATED
+nginx                                             Official build of Nginx.                        18433     [OK]
+linuxserver/nginx                                 An Nginx container, brought to you by LinuxS…   193
+bitnami/nginx                                     Bitnami nginx Docker Image                      159                  [OK]
+ubuntu/nginx                                      Nginx, a high-performance reverse proxy & we…   86
+privatebin/nginx-fpm-alpine                       PrivateBin running on an Nginx, php-fpm & Al…   72                   [OK]
+bitnami/nginx-ingress-controller                  Bitnami Docker Image for NGINX Ingress Contr…   25                   [OK]
+rancher/nginx-ingress-controller                                                                  11
+kasmweb/nginx                                     An Nginx image based off nginx:alpine and in…   6
+bitnami/nginx-ldap-auth-daemon                                                                    3
+bitnami/nginx-exporter                                                                            3
+rapidfort/nginx                                   RapidFort optimized, hardened image for NGINX   3
+circleci/nginx                                    This image is for internal use                  2
+redash/nginx                                      Pre-configured nginx to proxy linked contain…   2
+rancher/nginx-ingress-controller-defaultbackend                                                   2
+vmware/nginx                                                                                      2
+rancher/nginx                                                                                     2
+rapidfort/nginx-official                          RapidFort optimized, hardened image for NGIN…   1
+bitnami/nginx-intel                                                                               1
+vmware/nginx-photon                                                                               1
+rancher/nginx-conf                                                                                0
+rancher/nginx-ssl                                                                                 0
+rapidfort/nginx-ib                                RapidFort optimized, hardened image for NGIN…   0
+unit                                              Official build of NGINX Unit: a polyglot app…   0         [OK]
+continuumio/nginx-ingress-ws                                                                      0
+rancher/nginx-ingress-controller-amd64                                                            0
+PS C:\Users\mao\Desktop>
+```
+
+
+
+
+
+### 第二步：拉取镜像
+
+命令：
+
+```sh
+docker pull nginx
+```
+
+如果不指定版本，默认使用最新版本
+
+```sh
+PS C:\Users\mao\Desktop> docker pull nginx
+Using default tag: latest
+latest: Pulling from library/nginx
+26c5c85e47da: Downloading
+4f3256bdf66b: Downloading
+2019c71d5655: Downloading
+8c767bdbc9ae: Downloading
+78e14bb05fd3: Downloading
+75576236abf5: Downloading
+latest: Pulling from library/nginx
+26c5c85e47da: Pull complete
+4f3256bdf66b: Pull complete
+2019c71d5655: Pull complete
+8c767bdbc9ae: Pull complete
+78e14bb05fd3: Pull complete
+75576236abf5: Pull complete
+Digest: sha256:63b44e8ddb83d5dd8020327c1f40436e37a6fffd3ef2498a6204df23be6e7e94
+Status: Downloaded newer image for nginx:latest
+docker.io/library/nginx:latest
+PS C:\Users\mao\Desktop>
+```
+
+
+
+
+
+### 第三步：查看镜像是否拉取成功
+
+命令：
+
+```sh
+docker images
+```
+
+```sh
+PS C:\Users\mao\Desktop> docker images
+REPOSITORY          TAG       IMAGE ID       CREATED         SIZE
+nginx               latest    6efc10a0510f   2 weeks ago     142MB
+redislabs/rebloom   latest    66d626dc1387   17 months ago   147MB
+PS C:\Users\mao\Desktop>
+```
+
+
+
+
+
+### 第四步：运行
+
+```sh
+docker run  -v D:/Docker/nginx/logs:/var/log/nginx -p 80:80 -d --name nginx nginx
+```
+
+```sh
+PS C:\Users\mao\Desktop> docker run  -v D:/Docker/nginx/logs:/var/log/nginx -v D:/Docker/nginx/html:/usr/share/nginx/html -v D:/Docker/nginx/conf:/etc/nginx/conf.d -p 80:80 -d --name nginx nginx
+8354588d9e6fdc57932f913236e556c8971523f62b65c998ec26bb259f98f146
+PS C:\Users\mao\Desktop>
+```
+
+```sh
+PS C:\Users\mao\Desktop> docker run  -v D:/Docker/nginx/logs:/var/log/nginx -p 80:80 -d --name nginx nginx
+4f3ddbf99a0e392fffaf99af51bf055e04d3a300b28bc44d6c551d5487e47d47
+PS C:\Users\mao\Desktop>
+```
+
+
+
+
+
+
+
+### 第五步：检查运行状态
+
+命令：
+
+```sh
+docker ps
+```
+
+或者：
+
+```sh
+docker ps -a
+```
+
+
+
+```sh
+PS C:\Users\mao\Desktop> docker ps
+CONTAINER ID   IMAGE     COMMAND                  CREATED          STATUS          PORTS                NAMES
+8354588d9e6f   nginx     "/docker-entrypoint.…"   13 seconds ago   Up 11 seconds   0.0.0.0:80->80/tcp   nginx
+PS C:\Users\mao\Desktop>
+```
+
+```sh
+PS C:\Users\mao\Desktop> docker ps -a
+CONTAINER ID   IMAGE               COMMAND                  CREATED          STATUS                     PORTS                     NAMES
+4f3ddbf99a0e   nginx               "/docker-entrypoint.…"   20 seconds ago   Up 19 seconds              0.0.0.0:80->80/tcp        nginx
+0a3197e86f21   redislabs/rebloom   "docker-entrypoint.s…"   8 weeks ago      Exited (255) 2 weeks ago   0.0.0.0:16379->6379/tcp   redis-redisbloom
+PS C:\Users\mao\Desktop>
+```
+
+
+
+
+
+### 第六步：访问Nginx
+
+http://localhost/
+
+![image-20230428142728767](img/Nginx学习笔记/image-20230428142728767.png)
+
+
+
+### 第六步：进入容器查看日志
+
+```sh
+docker exec -it nginx /bin/bash
+```
+
+```sh
+PS C:\Users\mao\Desktop> docker exec -it nginx /bin/bash
+root@4f3ddbf99a0e:/# pwd
+/
+root@4f3ddbf99a0e:/# type nginx
+nginx is /usr/sbin/nginx
+root@4f3ddbf99a0e:/# cd /var/log/nginx
+root@4f3ddbf99a0e:/var/log/nginx# ls -l
+total 8
+-rw-r--r-- 1 root root  859 Apr 28 06:26 access.log
+-rw-r--r-- 1 root root 2507 Apr 28 06:26 error.log
+root@4f3ddbf99a0e:/var/log/nginx# cat access.log
+172.17.0.1 - - [28/Apr/2023:06:26:12 +0000] "GET / HTTP/1.1" 200 615 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+172.17.0.1 - - [28/Apr/2023:06:26:12 +0000] "GET /favicon.ico HTTP/1.1" 404 555 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+172.17.0.1 - - [28/Apr/2023:06:26:19 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+172.17.0.1 - - [28/Apr/2023:06:26:19 +0000] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.58" "-"
+root@4f3ddbf99a0e:/var/log/nginx# cat error.log
+2023/04/28 06:25:46 [notice] 1#1: using the "epoll" event method
+2023/04/28 06:25:46 [notice] 1#1: nginx/1.23.4
+2023/04/28 06:25:46 [notice] 1#1: built by gcc 10.2.1 20210110 (Debian 10.2.1-6)
+2023/04/28 06:25:46 [notice] 1#1: OS: Linux 5.10.16.3-microsoft-standard-WSL2
+2023/04/28 06:25:46 [notice] 1#1: getrlimit(RLIMIT_NOFILE): 1048576:1048576
+2023/04/28 06:25:46 [notice] 1#1: start worker processes
+2023/04/28 06:25:46 [notice] 1#1: start worker process 29
+2023/04/28 06:25:46 [notice] 1#1: start worker process 30
+2023/04/28 06:25:46 [notice] 1#1: start worker process 31
+2023/04/28 06:25:46 [notice] 1#1: start worker process 32
+2023/04/28 06:25:46 [notice] 1#1: start worker process 33
+2023/04/28 06:25:46 [notice] 1#1: start worker process 34
+2023/04/28 06:25:46 [notice] 1#1: start worker process 35
+2023/04/28 06:25:46 [notice] 1#1: start worker process 36
+2023/04/28 06:25:46 [notice] 1#1: start worker process 37
+2023/04/28 06:25:46 [notice] 1#1: start worker process 38
+2023/04/28 06:25:46 [notice] 1#1: start worker process 39
+2023/04/28 06:25:46 [notice] 1#1: start worker process 40
+2023/04/28 06:25:46 [notice] 1#1: start worker process 41
+2023/04/28 06:25:46 [notice] 1#1: start worker process 42
+2023/04/28 06:25:46 [notice] 1#1: start worker process 43
+2023/04/28 06:25:46 [notice] 1#1: start worker process 44
+2023/04/28 06:25:46 [notice] 1#1: start worker process 45
+2023/04/28 06:25:46 [notice] 1#1: start worker process 46
+2023/04/28 06:25:46 [notice] 1#1: start worker process 47
+2023/04/28 06:25:46 [notice] 1#1: start worker process 48
+2023/04/28 06:25:46 [notice] 1#1: start worker process 49
+2023/04/28 06:25:46 [notice] 1#1: start worker process 50
+2023/04/28 06:25:46 [notice] 1#1: start worker process 51
+2023/04/28 06:25:46 [notice] 1#1: start worker process 52
+2023/04/28 06:25:46 [notice] 1#1: start worker process 53
+2023/04/28 06:25:46 [notice] 1#1: start worker process 54
+2023/04/28 06:25:46 [notice] 1#1: start worker process 55
+2023/04/28 06:25:46 [notice] 1#1: start worker process 56
+2023/04/28 06:25:46 [notice] 1#1: start worker process 57
+2023/04/28 06:25:46 [notice] 1#1: start worker process 58
+2023/04/28 06:25:46 [notice] 1#1: start worker process 59
+2023/04/28 06:25:46 [notice] 1#1: start worker process 60
+2023/04/28 06:26:12 [error] 30#30: *2 open() "/usr/share/nginx/html/favicon.ico" failed (2: No such file or directory), client: 172.17.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "localhost", referrer: "http://localhost/"
+root@4f3ddbf99a0e:/var/log/nginx#
+```
+
+
+
+
+
+
+
+
+
+## Linux安装
+
+准备一个内核为2.6及以上版本的操作系统，因为linux2.6及以上内核才支持epoll,而Nginx需要解决高并发压力问题是需要用到epoll，所以我们需要有这样的版本要求
+
+Linux：centOS
 
 
 
