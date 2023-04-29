@@ -1013,6 +1013,46 @@ PS D:\opensoft\nginx-1.24.0\logs>
 
 
 
+### 第六步：添加至环境变量
+
+
+
+在设置中打开系统属性窗口，点击高级
+
+
+
+![image-20230429140928126](img/Nginx学习笔记/image-20230429140928126.png)
+
+
+
+找到Path，点击编辑
+
+![image-20230429141015933](img/Nginx学习笔记/image-20230429141015933.png)
+
+
+
+点击新建
+
+![image-20230429141049458](img/Nginx学习笔记/image-20230429141049458.png)
+
+
+
+
+
+![image-20230429141150083](img/Nginx学习笔记/image-20230429141150083.png)
+
+
+
+测试环境变量配置是否成功，在桌面打开控制台
+
+```sh
+PS C:\Users\mao\Desktop> nginx -v
+nginx version: nginx/1.24.0
+PS C:\Users\mao\Desktop>
+```
+
+
+
 
 
 
@@ -1507,4 +1547,158 @@ PS D:\opensoft\nginx-1.24.0\conf>
 
 
 ## html
+
+**存放nginx自带的两个静态的html页面**
+
+
+
+### 50x.html
+
+**访问失败后的失败页面**
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0\html> cat .\50x.html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Error</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>An error occurred.</h1>
+<p>Sorry, the page you are looking for is currently unavailable.<br/>
+Please try again later.</p>
+<p>If you are the system administrator of this resource then you should check
+the error log for details.</p>
+<p><em>Faithfully yours, nginx.</em></p>
+</body>
+</html>
+PS D:\opensoft\nginx-1.24.0\html>
+```
+
+
+
+![image-20230429135549993](img/Nginx学习笔记/image-20230429135549993.png)
+
+
+
+### index.html
+
+**成功访问的默认首页**
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0\html> cat .\index.html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+PS D:\opensoft\nginx-1.24.0\html>
+```
+
+
+
+![image-20230429135648553](img/Nginx学习笔记/image-20230429135648553.png)
+
+
+
+
+
+## logs
+
+**日志文件，当nginx服务器启动后，这里面会有 access.log 、error.log 和nginx.pid三个文件出现**
+
+
+
+### access.log
+
+**访问日志，用户访问时会留下一条记录**
+
+包含IP地址、访问时间、请求方式、请求的URL、协议版本、状态码、浏览器UA标识等
+
+```sh
+127.0.0.1 - - [29/Apr/2023:13:32:27 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+```
+
+
+
+### error.log
+
+**错误日志**
+
+```sh
+2023/04/29 13:30:25 [error] 36316#34412: *1 CreateFile() "D:\opensoft\nginx-1.24.0/html/favicon.ico" failed (2: The system cannot find the file specified), client: 127.0.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "localhost", referrer: "http://localhost/"
+2023/04/29 13:31:32 [notice] 15804#22388: signal process started
+2023/04/29 13:33:42 [notice] 11564#25356: signal process started
+```
+
+
+
+### nginx.pid
+
+**当nginx启动后，每一个进程都会有一个进程的PID，Nginx的PID就保存在这里**
+
+```sh
+PS D:\opensoft\nginx-1.24.0\logs> cat .\nginx.pid
+32864
+PS D:\opensoft\nginx-1.24.0\logs>
+```
+
+
+
+当前Master进程的PID为32864
+
+![image-20230429140513674](img/Nginx学习笔记/image-20230429140513674.png)
+
+
+
+
+
+
+
+## sbin
+
+**sbin是存放执行程序文件的目录（Linux）**
+
+Windows可执行文件放在跟目录下
+
+用来控制Nginx的启动和停止等相关的命令
+
+
+
+
+
+
+
+
+
+# Nginx服务器启停命令
+
+
 
