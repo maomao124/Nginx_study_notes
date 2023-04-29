@@ -886,3 +886,210 @@ total 8
 
 ## Windows安装
 
+### 第一步：下载压缩包
+
+http://nginx.org/en/download.html
+
+
+
+http://nginx.org/download/nginx-1.24.0.zip
+
+
+
+
+
+### 第二步：解压
+
+解压后的目录：
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/4/11     23:31                conf
+d-----         2023/4/11     23:31                contrib
+d-----         2023/4/11     23:31                docs
+d-----         2023/4/11     23:31                html
+d-----         2023/4/11     23:31                logs
+d-----         2023/4/11     23:31                temp
+------         2023/4/11     23:29        3811328 nginx.exe
+
+
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+
+
+### 第三步：运行
+
+```sh
+./nginx
+```
+
+或者
+
+```sh
+start ./nginx
+```
+
+
+
+
+
+### 第四步：访问
+
+http://localhost/
+
+
+
+![image-20230429133052564](img/Nginx学习笔记/image-20230429133052564.png)
+
+
+
+### 第五步：查看访问日志
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/4/11     23:31                conf
+d-----         2023/4/11     23:31                contrib
+d-----         2023/4/11     23:31                docs
+d-----         2023/4/11     23:31                html
+d-----         2023/4/29     13:31                logs
+d-----         2023/4/29     13:29                temp
+------         2023/4/11     23:29        3811328 nginx.exe
+
+
+PS D:\opensoft\nginx-1.24.0> cd logs
+PS D:\opensoft\nginx-1.24.0\logs> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\logs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         2023/4/29     13:30            843 access.log
+-a----         2023/4/29     13:31            348 error.log
+-a----         2023/4/29     13:31              7 nginx.pid
+
+
+PS D:\opensoft\nginx-1.24.0\logs> cat .\access.log
+127.0.0.1 - - [29/Apr/2023:13:30:25 +0800] "GET / HTTP/1.1" 200 615 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:30:25 +0800] "GET /favicon.ico HTTP/1.1" 404 555 "http://localhost/" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:30:27 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:30:27 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:25 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:25 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:26 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:26 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:26 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:26 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:26 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:26 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+127.0.0.1 - - [29/Apr/2023:13:32:27 +0800] "GET / HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.64"
+PS D:\opensoft\nginx-1.24.0\logs> cat .\error.log
+2023/04/29 13:30:25 [error] 36316#34412: *1 CreateFile() "D:\opensoft\nginx-1.24.0/html/favicon.ico" failed (2: The system cannot find the file specified), client: 127.0.0.1, server: localhost, request: "GET /favicon.ico HTTP/1.1", host: "localhost", referrer: "http://localhost/"
+2023/04/29 13:31:32 [notice] 15804#22388: signal process started
+PS D:\opensoft\nginx-1.24.0\logs> cat .\nginx.pid
+20112
+PS D:\opensoft\nginx-1.24.0\logs>
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Nginx目录结构
+
+在使用Nginx之前，先对安装好的Nginx目录文件进行一个分析
+
+```sh
+PS D:\opensoft\nginx-1.24.0> tree /F
+文件夹 PATH 列表
+卷序列号为 5E84-66B0
+D:.
+│  nginx.exe
+│
+├─conf
+│      fastcgi.conf
+│      fastcgi_params
+│      koi-utf
+│      koi-win
+│      mime.types
+│      nginx.conf
+│      scgi_params
+│      uwsgi_params
+│      win-utf
+│
+├─contrib
+│  │  geo2nginx.pl
+│  │  README
+│  │
+│  ├─unicode2nginx
+│  │      koi-utf
+│  │      unicode-to-nginx.pl
+│  │      win-utf
+│  │
+│  └─vim
+│      ├─ftdetect
+│      │      nginx.vim
+│      │
+│      ├─ftplugin
+│      │      nginx.vim
+│      │
+│      ├─indent
+│      │      nginx.vim
+│      │
+│      └─syntax
+│              nginx.vim
+│
+├─docs
+│      CHANGES
+│      CHANGES.ru
+│      LICENSE
+│      OpenSSL.LICENSE
+│      PCRE.LICENCE
+│      README
+│      zlib.LICENSE
+│
+├─html
+│      50x.html
+│      index.html
+│
+├─logs
+│      access.log
+│      error.log
+│
+└─temp
+    ├─client_body_temp
+    ├─fastcgi_temp
+    ├─proxy_temp
+    ├─scgi_temp
+    └─uwsgi_temp
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
