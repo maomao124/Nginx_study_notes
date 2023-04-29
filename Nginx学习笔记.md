@@ -1700,5 +1700,123 @@ Windows可执行文件放在跟目录下
 
 # Nginx服务器启停命令
 
+有两种方式：
+
+* Nginx服务的信号控制
+
+* Nginx的命令行控制
+
+
+
+
+
+## Nginx服务的信号控制
+
+Nginx默认采用的是多进程的方式来工作的，当将Nginx启动后，我们通过`ps -ef | grep nginx`命令可以查看启动的相关进程
+
+Nginx后台进程中包含一个master进程和多个worker进程，master进程主要用来管理worker进程，包含接收外界的信息，并将接收到的信号发送给各个worker进程，监控worker进程的状态，当worker进程出现异常退出后，会自动重新启动新的worker进程。而worker进程则是专门用来处理用户请求的，各个worker进程之间是平等的并且相互独立，处理请求的机会也是一样的。
+
+
+
+|   信号   |                            作用                            |
+| :------: | :--------------------------------------------------------: |
+| TERM/INT |                      立即关闭整个服务                      |
+|   QUIT   |                    "优雅"地关闭整个服务                    |
+|   HUP    |            重读配置文件并使用服务对新配置项生效            |
+|   USR1   |           重新打开日志文件，可以用来进行日志切割           |
+|   USR2   |                  平滑升级到最新版的nginx                   |
+|  WINCH   | 所有子进程不在接收处理新连接，相当于给work进程发送QUIT指令 |
+
+
+
+
+
+调用命令为`kill -signal PID`
+
+signal:即为信号；PID即为获取到的master线程ID
+
+
+
+发送TERM/INT信号给master进程，会将Nginx服务立即关闭
+
+```sh
+kill -TERM PID / kill -TERM `cat /usr/local/nginx/logs/nginx.pid`
+kill -INT PID / kill -INT `cat /usr/local/nginx/logs/nginx.pid`
+```
+
+
+
+发送QUIT信号给master进程，master进程会控制所有的work进程不再接收新的请求，等所有请求处理完后，在把进程都关闭掉
+
+```sh
+kill -QUIT PID / kill -TERM `cat /usr/local/nginx/logs/nginx.pid`
+```
+
+
+
+发送HUP信号给master进程，master进程会把控制旧的work进程不再接收新的请求，等处理完请求后将旧的work进程关闭掉，然后根据nginx的配置文件重新启动新的work进程
+
+```sh
+kill -HUP PID / kill -TERM `cat /usr/local/nginx/logs/nginx.pid`
+```
+
+
+
+发送USR1信号给master进程，告诉Nginx重新开启日志文件
+
+```sh
+kill -USR1 PID / kill -TERM `cat /usr/local/nginx/logs/nginx.pid`
+```
+
+
+
+发送USR2信号给master进程，告诉master进程要平滑升级，这个时候，会重新开启对应的master进程和work进程，整个系统中将会有两个master进程，并且新的master进程的PID会被记录在`/usr/local/nginx/logs/nginx.pid`而之前的旧的master进程PID会被记录
+
+```sh
+kill -USR2 PID / kill -USR2 `cat /usr/local/nginx/logs/nginx.pid`
+```
+
+```sh
+kill -QUIT PID / kill -QUIT `cat /usr/local/nginx/logs/nginx.pid.oldbin`
+```
+
+
+
+发送WINCH信号给master进程,让master进程控制不让所有的work进程在接收新的请求了，请求处理完后关闭work进程。注意master进程不会被关闭掉
+
+```sh
+kill -WINCH PID /kill -WINCH`cat /usr/local/nginx/logs/nginx.pid`
+```
+
+
+
+
+
+## Nginx的命令行控制
+
+此方式是通过Nginx安装目录下的sbin下的可执行文件nginx来进行Nginx状态的控制，我们可以通过`nginx -h`来查看都有哪些参数可以用：
+
+```sh
+root@4f3ddbf99a0e:/# nginx -h
+nginx version: nginx/1.23.4
+Usage: nginx [-?hvVtTq] [-s signal] [-p prefix]
+             [-e filename] [-c filename] [-g directives]
+
+Options:
+  -?,-h         : this help
+  -v            : show version and exit
+  -V            : show version and configure options then exit
+  -t            : test configuration and exit
+  -T            : test configuration, dump it and exit
+  -q            : suppress non-error messages during configuration testing
+  -s signal     : send signal to a master process: stop, quit, reopen, reload
+  -p prefix     : set prefix path (default: /etc/nginx/)
+  -e filename   : set error log file (default: /var/log/nginx/error.log)
+  -c filename   : set configuration file (default: /etc/nginx/nginx.conf)
+  -g directives : set global directives out of configuration file
+
+root@4f3ddbf99a0e:/#
+```
+
 
 
