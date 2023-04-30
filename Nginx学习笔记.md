@@ -1820,3 +1820,283 @@ root@4f3ddbf99a0e:/#
 
 
 
+### -h
+
+显示帮助信息
+
+
+
+### -v
+
+打印版本号信息并退出
+
+```sh
+root@4f3ddbf99a0e:/# nginx -v
+nginx version: nginx/1.23.4
+root@4f3ddbf99a0e:/#
+```
+
+
+
+### -V
+
+打印版本号信息和配置信息并退出
+
+```sh
+root@4f3ddbf99a0e:/# nginx -V
+nginx version: nginx/1.23.4
+built by gcc 10.2.1 20210110 (Debian 10.2.1-6)
+built with OpenSSL 1.1.1n  15 Mar 2022
+TLS SNI support enabled
+configure arguments: --prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --modules-path=/usr/lib/nginx/modules --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid --lock-path=/var/run/nginx.lock --http-client-body-temp-path=/var/cache/nginx/client_temp --http-proxy-temp-path=/var/cache/nginx/proxy_temp --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp --http-scgi-temp-path=/var/cache/nginx/scgi_temp --user=nginx --group=nginx --with-compat --with-file-aio --with-threads --with-http_addition_module --with-http_auth_request_module --with-http_dav_module --with-http_flv_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_mp4_module --with-http_random_index_module --with-http_realip_module --with-http_secure_link_module --with-http_slice_module --with-http_ssl_module --with-http_stub_status_module --with-http_sub_module --with-http_v2_module --with-mail --with-mail_ssl_module --with-stream --with-stream_realip_module --with-stream_ssl_module --with-stream_ssl_preread_module --with-cc-opt='-g -O2 -ffile-prefix-map=/data/builder/debuild/nginx-1.23.4/debian/debuild-base/nginx-1.23.4=. -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC' --with-ld-opt='-Wl,-z,relro -Wl,-z,now -Wl,--as-needed -pie'
+root@4f3ddbf99a0e:/#
+```
+
+
+
+### -t
+
+测试nginx的配置文件语法是否正确并退出
+
+```sh
+root@4f3ddbf99a0e:/# nginx -t
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+root@4f3ddbf99a0e:/#
+```
+
+
+
+### -T
+
+测试nginx的配置文件语法是否正确并列出用到的配置文件信息然后退出
+
+```sh
+root@4f3ddbf99a0e:/# nginx -T
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+# configuration file /etc/nginx/nginx.conf:
+
+user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+
+# configuration file /etc/nginx/mime.types:
+
+types {
+    text/html                                        html htm shtml;
+    text/css                                         css;
+    text/xml                                         xml;
+    image/gif                                        gif;
+    image/jpeg                                       jpeg jpg;
+    application/javascript                           js;
+    application/atom+xml                             atom;
+    application/rss+xml                              rss;
+
+    text/mathml                                      mml;
+    text/plain                                       txt;
+    text/vnd.sun.j2me.app-descriptor                 jad;
+    text/vnd.wap.wml                                 wml;
+    text/x-component                                 htc;
+
+    image/avif                                       avif;
+    image/png                                        png;
+    image/svg+xml                                    svg svgz;
+    image/tiff                                       tif tiff;
+    image/vnd.wap.wbmp                               wbmp;
+    image/webp                                       webp;
+    image/x-icon                                     ico;
+    image/x-jng                                      jng;
+    image/x-ms-bmp                                   bmp;
+
+    font/woff                                        woff;
+    font/woff2                                       woff2;
+
+    application/java-archive                         jar war ear;
+    application/json                                 json;
+    application/mac-binhex40                         hqx;
+    application/msword                               doc;
+    application/pdf                                  pdf;
+    application/postscript                           ps eps ai;
+    application/rtf                                  rtf;
+    application/vnd.apple.mpegurl                    m3u8;
+    application/vnd.google-earth.kml+xml             kml;
+    application/vnd.google-earth.kmz                 kmz;
+    application/vnd.ms-excel                         xls;
+    application/vnd.ms-fontobject                    eot;
+    application/vnd.ms-powerpoint                    ppt;
+    application/vnd.oasis.opendocument.graphics      odg;
+    application/vnd.oasis.opendocument.presentation  odp;
+    application/vnd.oasis.opendocument.spreadsheet   ods;
+    application/vnd.oasis.opendocument.text          odt;
+    application/vnd.openxmlformats-officedocument.presentationml.presentation
+                                                     pptx;
+    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+                                                     xlsx;
+    application/vnd.openxmlformats-officedocument.wordprocessingml.document
+                                                     docx;
+    application/vnd.wap.wmlc                         wmlc;
+    application/wasm                                 wasm;
+    application/x-7z-compressed                      7z;
+    application/x-cocoa                              cco;
+    application/x-java-archive-diff                  jardiff;
+    application/x-java-jnlp-file                     jnlp;
+    application/x-makeself                           run;
+    application/x-perl                               pl pm;
+    application/x-pilot                              prc pdb;
+    application/x-rar-compressed                     rar;
+    application/x-redhat-package-manager             rpm;
+    application/x-sea                                sea;
+    application/x-shockwave-flash                    swf;
+    application/x-stuffit                            sit;
+    application/x-tcl                                tcl tk;
+    application/x-x509-ca-cert                       der pem crt;
+    application/x-xpinstall                          xpi;
+    application/xhtml+xml                            xhtml;
+    application/xspf+xml                             xspf;
+    application/zip                                  zip;
+
+    application/octet-stream                         bin exe dll;
+    application/octet-stream                         deb;
+    application/octet-stream                         dmg;
+    application/octet-stream                         iso img;
+    application/octet-stream                         msi msp msm;
+
+    audio/midi                                       mid midi kar;
+    audio/mpeg                                       mp3;
+    audio/ogg                                        ogg;
+    audio/x-m4a                                      m4a;
+    audio/x-realaudio                                ra;
+
+    video/3gpp                                       3gpp 3gp;
+    video/mp2t                                       ts;
+    video/mp4                                        mp4;
+    video/mpeg                                       mpeg mpg;
+    video/quicktime                                  mov;
+    video/webm                                       webm;
+    video/x-flv                                      flv;
+    video/x-m4v                                      m4v;
+    video/x-mng                                      mng;
+    video/x-ms-asf                                   asx asf;
+    video/x-ms-wmv                                   wmv;
+    video/x-msvideo                                  avi;
+}
+
+# configuration file /etc/nginx/conf.d/default.conf:
+server {
+    listen       80;
+    listen  [::]:80;
+    server_name  localhost;
+
+    #access_log  /var/log/nginx/host.access.log  main;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+
+    #error_page  404              /404.html;
+
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+    #
+    #location ~ \.php$ {
+    #    proxy_pass   http://127.0.0.1;
+    #}
+
+    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+    #
+    #location ~ \.php$ {
+    #    root           html;
+    #    fastcgi_pass   127.0.0.1:9000;
+    #    fastcgi_index  index.php;
+    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+    #    include        fastcgi_params;
+    #}
+
+    # deny access to .htaccess files, if Apache's document root
+    # concurs with nginx's one
+    #
+    #location ~ /\.ht {
+    #    deny  all;
+    #}
+}
+
+
+root@4f3ddbf99a0e:/#
+```
+
+
+
+
+
+### -q
+
+在配置测试期间禁止显示非错误消息
+
+
+
+### -s
+
+signal信号，后面可以跟 ：
+
+* stop：快速关闭，类似于TERM/INT信号的作用
+* quit：优雅的关闭，类似于QUIT信号的作用
+* reopen：重新打开日志文件，类似于USR1信号的作用
+* reload：类似于HUP信号的作用
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> start ./nginx
+PS D:\opensoft\nginx-1.24.0> nginx -s stop
+PS D:\opensoft\nginx-1.24.0> start ./nginx
+PS D:\opensoft\nginx-1.24.0> nginx -s quit
+PS D:\opensoft\nginx-1.24.0> start ./nginx
+PS D:\opensoft\nginx-1.24.0> nginx -s reopen
+PS D:\opensoft\nginx-1.24.0> nginx -s reload
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+
+
+### -p
+
+
+
