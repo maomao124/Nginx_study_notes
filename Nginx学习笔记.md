@@ -2214,3 +2214,337 @@ mv nginx nginxold
 
 
 # Nginx核心配置文件
+
+配置文件默认内容：
+
+```sh
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+        listen       80;
+        server_name  localhost;
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+
+}
+```
+
+
+
+nginx.conf配置文件中默认有三大块：
+
+* 全局块
+* events块
+* http块
+
+
+
+http块中可以配置多个server块，每个server块又可以配置多个location块
+
+
+
+
+
+## 全局块
+
+### user指令
+
+user**用于配置运行Nginx服务器的worker进程的用户和用户组**
+
+**使用user指令可以指定启动运行工作进程的用户及用户组，这样对于系统的权限访问控制的更加精细，也更加安全。**
+
+
+
+|  语法  | user user [group] |
+| :----: | :---------------: |
+| 默认值 |      nobody       |
+|  位置  |      全局块       |
+
+
+
+该属性也可以在编译的时候指定，语法如下`./configure --user=user --group=group`,如果两个地方都进行了设置，最终生效的是配置文件中的配置
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+user mao;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+### master_process指令
+
+master_process**用来指定是否开启工作进程。**
+
+
+
+|  语法  | master_process on\|off; |
+| :----: | :---------------------: |
+| 默认值 |   master_process on;    |
+|  位置  |         全局块          |
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+# 开启工作进程
+master_process on;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+### worker_processes指令
+
+**用于配置Nginx生成工作进程的数量**，这个是Nginx服务器实现并发处理服务的关键所在。理论上来说workder process的值越大，可以支持的并发处理量也越多，但事实上这个值的设定是需要受到来自服务器自身的限制，建议将该值和服务器CPU的内核数保存一致
+
+
+
+|  语法  | worker_processes     num/auto; |
+| :----: | :----------------------------: |
+| 默认值 |               1                |
+|  位置  |             全局块             |
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+# 开启工作进程
+master_process on;
+# 配置Nginx生成工作进程的数量
+worker_processes 32;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+### daemon
+
+**设定Nginx是否以守护进程的方式启动**
+
+
+
+|  语法  | daemon on\|off; |
+| :----: | :-------------: |
+| 默认值 |   daemon on;    |
+|  位置  |     全局块      |
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+# 以守护进程的方式启动
+daemon on;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+### pid
+
+**用来配置Nginx当前master进程的进程号ID存储的文件路径**
+
+
+
+|  语法  |                  pid file;                  |
+| :----: | :-----------------------------------------: |
+| 默认值 | Linux默认为:/usr/local/nginx/logs/nginx.pid |
+|  位置  |                   全局块                    |
+
+
+
+该属性可以通过`./configure --pid-path=PATH`来指定
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+# 当前master进程的进程号ID存储的文件路径
+pid ./nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+### error_log
+
+**用来配置Nginx的错误日志存放路径**
+
+
+
+|  语法  |   error_log  file [日志级别];   |
+| :----: | :-----------------------------: |
+| 默认值 | error_log logs/error.log error; |
+|  位置  | 全局块、http、server、location  |
+
+
+
+该属性可以通过`./configure --error-log-path=PATH`来指定
+
+
+
+其中日志级别的值有：debug|info|notice|warn|error|crit|alert|emerg
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+# 错误日志
+error_log ./error_log.log warn;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+### include
+
+**用来引入其他配置文件，使Nginx的配置更加灵活**
+
+
+
+|  语法  | include file; |
+| :----: | :-----------: |
+| 默认值 |      无       |
+|  位置  |      any      |
+
+
+
+
+
+
+
+## events块
+
