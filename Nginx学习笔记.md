@@ -2098,5 +2098,119 @@ PS D:\opensoft\nginx-1.24.0>
 
 ### -p
 
+prefix，指定Nginx的prefix路径，(Linux默认为: /usr/local/nginx/)
 
 
+
+### -c
+
+filename，指定Nginx的配置文件路径，(Linux默认为: conf/nginx.conf)
+
+
+
+### -g
+
+用来补充Nginx配置文件，向Nginx服务指定启动时应用全局的配置
+
+
+
+
+
+
+
+# 版本平滑升级和新增模块
+
+如果想对Nginx的版本进行更新，或者要应用一些新的模块，最简单的做法就是停止当前的Nginx服务，然后开启新的Nginx服务。但是这样会导致在一段时间内，用户是无法访问服务器。为了解决这个问题，我们就需要用到Nginx服务器提供的平滑升级功能。
+
+在整个过程中，其实Nginx是一直对外提供服务的。并且当Nginx的服务器启动成功后，我们是可以通过浏览器进行直接访问的。
+
+
+
+有两种方案：
+
+* 使用Nginx服务信号完成Nginx的升级
+* 使用Nginx安装目录的make命令完成升级（Linux）
+
+
+
+
+
+## 使用Nginx服务信号进行升级
+
+### 第一步：备份可执行文件
+
+```sh
+cd /usr/local/nginx/sbin
+mv nginx nginxold
+```
+
+
+
+### 第二步：拷贝
+
+拷贝新的可执行文件到原来`/usr/local/nginx/sbin`目录下
+
+
+
+### 第三步:发送信号
+
+发送信号USR2
+
+```sh
+kill -USR2 当前PID
+```
+
+
+
+发送信号QUIT
+
+```sh
+kill -QUIT 当前PID
+```
+
+
+
+
+
+
+
+## 使用make命令完成升级
+
+### 第一步：备份可执行文件
+
+```sh
+cd /usr/local/nginx/sbin
+mv nginx nginxold
+```
+
+
+
+### 第二步：拷贝
+
+拷贝新的可执行文件到原来`/usr/local/nginx/sbin`目录下
+
+
+
+### 第三步：执行make upgrade
+
+进入到安装目录，执行`make upgrade`
+
+
+
+### 第四步：查看是否更新成功
+
+```sh
+./nginx -v
+```
+
+
+
+
+
+
+
+
+
+
+
+# Nginx核心配置文件
