@@ -2264,7 +2264,7 @@ http块中可以配置多个server块，每个server块又可以配置多个loca
 
 ## 全局块
 
-### user指令
+### user
 
 user**用于配置运行Nginx服务器的worker进程的用户和用户组**
 
@@ -2310,7 +2310,7 @@ http {
 
 
 
-### master_process指令
+### master_process
 
 master_process**用来指定是否开启工作进程。**
 
@@ -2351,7 +2351,7 @@ http {
 
 
 
-### worker_processes指令
+### worker_processes
 
 **用于配置Nginx生成工作进程的数量**，这个是Nginx服务器实现并发处理服务的关键所在。理论上来说workder process的值越大，可以支持的并发处理量也越多，但事实上这个值的设定是需要受到来自服务器自身的限制，建议将该值和服务器CPU的内核数保存一致
 
@@ -2367,7 +2367,6 @@ http {
 使用示例：
 
 ```sh
-worker_processes  1;
 # 开启工作进程
 master_process on;
 # 配置Nginx生成工作进程的数量
@@ -2547,4 +2546,96 @@ http {
 
 
 ## events块
+
+### accept_mutex
+
+**用来设置Nginx网络连接序列化**
+
+
+
+|  语法  | accept_mutex on\|off; |
+| :----: | :-------------------: |
+| 默认值 |   accept_mutex on;    |
+|  位置  |        events         |
+
+
+
+这个配置主要可以用来解决常说的**"惊群"问题**。大致意思是在某一个时刻，客户端发来一个请求连接，Nginx后台是以多进程的工作模式，也就是说有多个worker进程会被同时唤醒，但是最终只会有一个进程可以获取到连接，如果每次唤醒的进程数目太多，就会影响Nginx的整体性能。如果将上述值设置为on(开启状态)，将会对多个Nginx进程接收连接进行序列号，一个个来唤醒接收，就**防止了多个进程对连接的争抢**
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+    # 网络连接序列化
+    accept_mutex on;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+### multi_accept
+
+**用来设置是否允许同时接收多个网络连接**
+
+如果multi_accept被禁止了，nginx一个工作进程只能同时接受一个新的连接。否则，一个工作进程可以同时接受所有的新连接
+
+
+
+|  语法  | multi_accept on\|off; |
+| :----: | :-------------------: |
+| 默认值 |   multi_accept off;   |
+|  位置  |        events         |
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+    # 允许同时接收多个网络连接
+    multi_accept on;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+
+
+### worker_connections
 
