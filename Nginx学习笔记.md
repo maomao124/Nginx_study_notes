@@ -2639,3 +2639,259 @@ http {
 
 ### worker_connections
 
+**用来配置单个worker进程最大的连接数**
+
+这里的连接数不仅仅包括和前端用户建立的连接数，而是包括所有可能的连接数。另外，**number值不能大于操作系统支持打开的最大文件句柄数量**。
+
+
+
+|  语法  | worker_connections number; |
+| :----: | :------------------------: |
+| 默认值 |  worker_commections 512;   |
+|  位置  |           events           |
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+
+events {
+    # 单个worker进程最大的连接数
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+### use
+
+**用来设置Nginx服务器选择哪种事件驱动来处理网络消息**
+
+method的可选值有select/poll/epoll/kqueue等
+
+epoll需要linux内核在2.6以上
+
+
+
+|  语法  |  use  method;  |
+| :----: | :------------: |
+| 默认值 | 根据操作系统定 |
+|  位置  |     events     |
+
+
+
+使用示例：
+
+```sh
+worker_processes  1;
+
+events {
+    # 单个worker进程最大的连接数
+    worker_connections  1024;
+    use epoll;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+......
+    }
+
+}
+```
+
+
+
+
+
+
+
+## http块
+
+### MIME-Type
+
+浏览器中可以显示的内容有HTML、XML、GIF等种类繁多的文件、媒体等资源，浏览器为了区分这些资源，就需要使用MIME Type。所以说MIME Type是网络资源的媒体类型。Nginx作为web服务器，也需要能够识别前端请求的资源类型
+
+
+
+在Nginx的配置文件中，默认有两行配置：
+
+```sh
+include mime.types;
+default_type application/octet-stream;
+```
+
+
+
+### default_type
+
+**用来配置Nginx响应前端请求默认的MIME类型**
+
+
+
+|  语法  |  default_type mime-type;  |
+| :----: | :-----------------------: |
+| 默认值 | default_type text/plain； |
+|  位置  |  http、server、location   |
+
+
+
+在default_type之前还有一句`include mime.types`，相当于把mime.types文件中MIMT类型与相关类型文件的文件后缀名的对应关系加入到当前的配置文件中。
+
+
+
+有些时候请求某些接口的时候需要返回指定的文本字符串或者json字符串，如果逻辑非常简单或者干脆是固定的字符串，那么可以使用nginx快速实现，这样就不用编写程序响应请求了，可以减少服务器资源占用并且响应性能非常快。
+
+
+
+```sh
+worker_processes  1;
+
+events {
+    worker_connections  1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+    sendfile        on;
+    keepalive_timeout  65;
+
+    server {
+        listen       80;
+        server_name  localhost;
+        
+
+        location /text {
+           default_type text/html;
+           return 200 "test";
+         }
+    
+        location /json{
+           default_type application/json;
+           return 200 '{"id":10001,"name":"张三"}';
+         }
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+
+}
+```
+
+
+
+
+
+
+
+### 自定义服务日志
+
+Nginx中日志的类型分access.log、error.log。
+
+access.log:用来记录用户所有的访问请求。
+
+error.log:记录nginx本身运行时的错误信息，不会记录用户的访问请求。
+
+Nginx服务器支持对服务日志的格式、大小、输出等进行设置，需要使用到两个指令，**分别是access_log和log_format指令**。
+
+
+
+#### access_log
+
+**用来设置用户访问日志的相关属性**
+
+
+
+|  语法  | access_log path[format[buffer=size]] |
+| :----: | :----------------------------------: |
+| 默认值 | access_log logs/access.log combined; |
+|  位置  |     `http`, `server`, `location`     |
+
+
+
+#### log_format
+
+**用来指定日志的输出格式**
+
+
+
+|  语法  | log_format name [escape=default\|json\|none] string....; |
+| :----: | :------------------------------------------------------: |
+| 默认值 |                log_format combined "...";                |
+|  位置  |                           http                           |
+
+
+
+
+
+### sendfile
+
+**用来设置Nginx服务器是否使用sendfile()传输文件**，该属性可以大大提高Nginx处理静态资源的性能
+
+
+
+|  语法  |   sendfile on\|off；   |
+| :----: | :--------------------: |
+| 默认值 |     sendfile off;      |
+|  位置  | http、server、location |
+
+
+
+### keepalive_timeout
+
+**用来设置长连接的超时时间**
+
+
+
+|  语法  | keepalive_timeout time; |
+| :----: | :---------------------: |
+| 默认值 | keepalive_timeout 75s;  |
+|  位置  | http、server、location  |
+
+
+
+
+
+### keepalive_requests
+
+**用来设置一个keep-alive连接使用的次数**
+
+
+
+|  语法  | keepalive_requests number; |
+| :----: | :------------------------: |
+| 默认值 |  keepalive_requests 100;   |
+|  位置  |   http、server、location   |
+
+
+
+
+
+
+
+
+
+## server块和location块
+
