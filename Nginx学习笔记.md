@@ -3207,12 +3207,12 @@ server{
 		error_page 404 /404.html;
 		#配置处理/server1/location1请求的location
 		location /server1/location1{
-			root html/server1;
+			root html;
 			index index_sr1_location1.html;
 		}
 		#配置处理/server1/location2请求的location
 		location /server1/location2{
-			root html/server1;
+			root html;
 			index index_sr1_location2.html;
 		}
 		#配置错误页面转向
@@ -3225,13 +3225,11 @@ server{
 
 
 
-创建html文件
+创建html文件index_sr1_location1.html
 
-位于html/server1目录下
+位于html/server1/location1目录下
 
 
-
-index_sr1_location1.html
 
 ```html
 <!DOCTYPE html>
@@ -3252,7 +3250,9 @@ font-family: Tahoma, Verdana, Arial, sans-serif; }
 
 
 
-index_sr1_location2.html
+创建html文件index_sr1_location2.html
+
+位于html/server1/location2目录下
 
 ```html
 <!DOCTYPE html>
@@ -3288,12 +3288,12 @@ server{
 		error_page 404 /404.html;
 		#配置处理/server1/location1请求的location
 		location /server2/location1{
-			root html/server2;
+			root html;
 			index index_sr2_location1.html;
 		}
 		#配置处理/server2/location2请求的location
 		location /server2/location2{
-			root html/server2;
+			root html;
 			index index_sr2_location2.html;
 		}
 		#配置错误页面转向
@@ -3306,13 +3306,11 @@ server{
 
 
 
-创建html文件
-
-位于html/server2目录下
 
 
+创建html文件index_sr2_location1.html
 
-index_sr2_location1.html
+位于html/server2/location1目录下
 
 ```html
 <!DOCTYPE html>
@@ -3333,7 +3331,9 @@ font-family: Tahoma, Verdana, Arial, sans-serif; }
 
 
 
-index_sr2_location2.html
+创建html文件index_sr2_location2.html
+
+位于html/server2/location2目录下
 
 ```html
 <!DOCTYPE html>
@@ -3350,6 +3350,31 @@ font-family: Tahoma, Verdana, Arial, sans-serif; }
 <h1>index_sr2_location2</h1>
 </body>
 </html>
+```
+
+
+
+创建404.html文件
+
+位于html目录
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>Error</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>404</h1>
+
+</body>
+</html>
+
 ```
 
 
@@ -3385,39 +3410,33 @@ D:.
 │  │  uwsgi_params
 │  │  win-utf
 │  │
+│  │
 │  └─server
 │          server1.conf
 │          server2.conf
 │
 ├─html
+│  │  404.html
 │  │  50x.html
 │  │  index.html
 │  │
 │  ├─server1
-│  │      index_sr1_location1.html
-│  │      index_sr1_location2.html
+│  │  ├─location1
+│  │  │      index_sr1_location1.html
+│  │  │
+│  │  └─location2
+│  │          index_sr1_location2.html
 │  │
 │  └─server2
-│          index_sr2_location1.html
-│          index_sr2_location2.html
+│      ├─location1
+│      │      index_sr2_location1.html
+│      │
+│      └─location2
+│              index_sr2_location2.html
 │
 ├─logs
-│  │  access.log
-│  │  error.log
-│  │  nginx.pid
-│  │
 │  ├─server1
-│  │      access.log
-│  │
 │  └─server2
-│          access.log
-│
-└─temp
-    ├─client_body_temp
-    ├─fastcgi_temp
-    ├─proxy_temp
-    ├─scgi_temp
-    └─uwsgi_temp
 PS D:\opensoft\nginx-1.24.0>
 ```
 
@@ -3426,4 +3445,87 @@ PS D:\opensoft\nginx-1.24.0>
 
 
 ### 测试
+
+http://127.0.0.1:8081/server1/location1：访问的是：index_sr1_location1.html
+
+![image-20230503160729094](img/Nginx学习笔记/image-20230503160729094.png)
+
+
+
+http://127.0.0.1:8081/server1/location2：访问的是：index_sr1_location2.html
+
+![image-20230503160741149](img/Nginx学习笔记/image-20230503160741149.png)
+
+
+
+
+
+http://127.0.0.1:8082/server2/location1：访问的是：index_sr2_location1.html
+
+![image-20230503160750934](img/Nginx学习笔记/image-20230503160750934.png)
+
+
+
+
+
+http://127.0.0.1:8082/server2/location2：访问的是：index_sr2_location2.html
+
+![image-20230503160759803](img/Nginx学习笔记/image-20230503160759803.png)
+
+
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> cd logs
+PS D:\opensoft\nginx-1.24.0\logs> cat .\error.log
+PS D:\opensoft\nginx-1.24.0\logs> cd .\server1\
+PS D:\opensoft\nginx-1.24.0\logs\server1> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\logs\server1
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----          2023/5/3     16:07            450 access.log
+
+
+PS D:\opensoft\nginx-1.24.0\logs\server1> cat .\access.log
+127.0.0.1 - - [03/May/2023:16:07:21 +0800] "GET /server1/location1/ HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.68" "-"
+127.0.0.1 - - [03/May/2023:16:07:37 +0800] "GET /server1/location2/ HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.68" "-"
+PS D:\opensoft\nginx-1.24.0\logs\server1> cd ..
+PS D:\opensoft\nginx-1.24.0\logs> cd .\server2\
+PS D:\opensoft\nginx-1.24.0\logs\server2> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\logs\server2
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----          2023/5/3     16:07            450 access.log
+
+
+PS D:\opensoft\nginx-1.24.0\logs\server2> cat .\access.log
+127.0.0.1 - - [03/May/2023:16:07:47 +0800] "GET /server2/location1/ HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.68" "-"
+127.0.0.1 - - [03/May/2023:16:07:56 +0800] "GET /server2/location2/ HTTP/1.1" 304 0 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.68" "-"
+PS D:\opensoft\nginx-1.24.0\logs\server2>
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Nginx静态资源部署
+
+
 
