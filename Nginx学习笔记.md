@@ -2895,3 +2895,535 @@ Nginx服务器支持对服务日志的格式、大小、输出等进行设置，
 
 ## server块和location块
 
+```sh
+server {
+        listen       80;
+        server_name  localhost;
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+       
+        error_page   500 502 503 504 404  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+```
+
+
+
+
+
+### 需求
+
+有如下访问：
+
+* http://127.0.0.1:8081/server1/location1：访问的是：index_sr1_location1.html
+* http://127.0.0.1:8081/server1/location2：访问的是：index_sr1_location2.html
+* http://127.0.0.1:8082/server2/location1：访问的是：index_sr2_location1.html
+* http://127.0.0.1:8082/server2/location2：访问的是：index_sr2_location2.html
+
+
+
+如果访问的资源不存在，返回自定义的404页面
+
+将/server1和/server2的配置使用不同的配置文件分割
+
+使用include进行合并配置文件
+
+为/server1和/server2各自创建一个访问日志文件
+
+
+
+
+
+### 实现
+
+以windows系统为例
+
+
+
+创建日志目录：
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/4/29     14:43                conf
+d-----         2023/4/11     23:31                contrib
+d-----         2023/4/11     23:31                docs
+d-----         2023/4/11     23:31                html
+d-----          2023/5/1     13:48                logs
+d-----         2023/4/29     13:29                temp
+------         2023/4/11     23:29        3811328 nginx.exe
+
+
+PS D:\opensoft\nginx-1.24.0> cd logs
+PS D:\opensoft\nginx-1.24.0\logs> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\logs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----          2023/5/1     23:32          20220 access.log
+-a----          2023/5/1     23:32          15005 error.log
+-a----          2023/5/1     13:52              7 nginx.pid
+
+
+PS D:\opensoft\nginx-1.24.0\logs> mkdir server1
+
+
+    目录: D:\opensoft\nginx-1.24.0\logs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----          2023/5/3     13:55                server1
+
+
+PS D:\opensoft\nginx-1.24.0\logs> mkdir server2
+
+
+    目录: D:\opensoft\nginx-1.24.0\logs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----          2023/5/3     13:55                server2
+
+
+PS D:\opensoft\nginx-1.24.0\logs> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\logs
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----          2023/5/3     13:55                server1
+d-----          2023/5/3     13:55                server2
+-a----          2023/5/1     23:32          20220 access.log
+-a----          2023/5/1     23:32          15005 error.log
+-a----          2023/5/1     13:52              7 nginx.pid
+
+
+PS D:\opensoft\nginx-1.24.0\logs>
+```
+
+
+
+
+
+创建配置文件目录
+
+```sh
+PS D:\opensoft\nginx-1.24.0> cd conf
+PS D:\opensoft\nginx-1.24.0\conf> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\conf
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/4/29     14:43                conf-backup
+------         2023/4/11     23:31           1103 fastcgi.conf
+------         2023/4/11     23:31           1032 fastcgi_params
+------         2023/4/11     23:31           2946 koi-utf
+------         2023/4/11     23:31           2326 koi-win
+------         2023/4/11     23:31           5448 mime.types
+-a----          2023/5/1     13:52            556 nginx.conf
+------         2023/4/11     23:31            653 scgi_params
+------         2023/4/11     23:31            681 uwsgi_params
+------         2023/4/11     23:31           3736 win-utf
+
+
+PS D:\opensoft\nginx-1.24.0\conf> mkdir server
+
+
+    目录: D:\opensoft\nginx-1.24.0\conf
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----          2023/5/3     13:56                server
+
+
+PS D:\opensoft\nginx-1.24.0\conf> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\conf
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/4/29     14:43                conf-backup
+d-----          2023/5/3     13:56                server
+------         2023/4/11     23:31           1103 fastcgi.conf
+------         2023/4/11     23:31           1032 fastcgi_params
+------         2023/4/11     23:31           2946 koi-utf
+------         2023/4/11     23:31           2326 koi-win
+------         2023/4/11     23:31           5448 mime.types
+-a----          2023/5/1     13:52            556 nginx.conf
+------         2023/4/11     23:31            653 scgi_params
+------         2023/4/11     23:31            681 uwsgi_params
+------         2023/4/11     23:31           3736 win-utf
+
+
+PS D:\opensoft\nginx-1.24.0\conf>
+```
+
+
+
+创建静态资源目录
+
+```sh
+PS D:\opensoft\nginx-1.24.0> cd html
+PS D:\opensoft\nginx-1.24.0\html> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\html
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+------         2023/4/11      9:45            497 50x.html
+------         2023/4/11      9:45            615 index.html
+
+
+PS D:\opensoft\nginx-1.24.0\html> mkdir server1
+
+
+    目录: D:\opensoft\nginx-1.24.0\html
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----          2023/5/3     14:04                server1
+
+
+PS D:\opensoft\nginx-1.24.0\html> mkdir server2
+
+
+    目录: D:\opensoft\nginx-1.24.0\html
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----          2023/5/3     14:04                server2
+
+
+PS D:\opensoft\nginx-1.24.0\html> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\html
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----          2023/5/3     14:04                server1
+d-----          2023/5/3     14:04                server2
+------         2023/4/11      9:45            497 50x.html
+------         2023/4/11      9:45            615 index.html
+
+
+PS D:\opensoft\nginx-1.24.0\html>
+```
+
+
+
+
+
+nginx.conf配置文件内容：
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+      #配置请求处理日志格式
+      log_format server1 '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+      log_format server2 '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+	#配置允许使用sendfile方式运输
+	sendfile on;
+	#配置连接超时时间
+	keepalive_timeout 65;
+	# 导入配置
+	include ./conf/server/*.conf;
+}
+```
+
+
+
+
+
+server1.conf
+
+位于conf/server目录下
+
+```sh
+server{
+		#配置监听端口和主机名称
+		listen 8081;
+		server_name localhost;
+		#配置请求处理日志存放路径
+		access_log ./logs/server1/access.log server1;
+		#配置错误页面
+		error_page 404 /404.html;
+		#配置处理/server1/location1请求的location
+		location /server1/location1{
+			root html/server1;
+			index index_sr1_location1.html;
+		}
+		#配置处理/server1/location2请求的location
+		location /server1/location2{
+			root html/server1;
+			index index_sr1_location2.html;
+		}
+		#配置错误页面转向
+		location = /404.html {
+			root html;
+			index 404.html;
+		}
+}
+```
+
+
+
+创建html文件
+
+位于html/server1目录下
+
+
+
+index_sr1_location1.html
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>server1</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>index_sr1_location1</h1>
+</body>
+</html>
+```
+
+
+
+index_sr1_location2.html
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>server1</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>index_sr1_location2</h1>
+</body>
+</html>
+```
+
+
+
+server2.conf
+
+位于conf/server目录下
+
+```sh
+server{
+		#配置监听端口和主机名称
+		listen 8082;
+		server_name localhost;
+		#配置请求处理日志存放路径
+		access_log ./logs/server2/access.log server2;
+		#配置错误页面,对404.html做了定向配置
+		error_page 404 /404.html;
+		#配置处理/server1/location1请求的location
+		location /server2/location1{
+			root html/server2;
+			index index_sr2_location1.html;
+		}
+		#配置处理/server2/location2请求的location
+		location /server2/location2{
+			root html/server2;
+			index index_sr2_location2.html;
+		}
+		#配置错误页面转向
+		location = /404.html {
+			root html;
+			index 404.html;
+		}
+	}
+```
+
+
+
+创建html文件
+
+位于html/server2目录下
+
+
+
+index_sr2_location1.html
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>server2</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>index_sr2_location1</h1>
+</body>
+</html>
+```
+
+
+
+index_sr2_location2.html
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+<title>server2</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>index_sr2_location2</h1>
+</body>
+</html>
+```
+
+
+
+
+
+检查配置是否正确
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ./nginx  -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> tree /f
+文件夹 PATH 列表
+卷序列号为 5E84-66B0
+D:.
+│  nginx.exe
+│
+├─conf
+│  │  fastcgi.conf
+│  │  fastcgi_params
+│  │  koi-utf
+│  │  koi-win
+│  │  mime.types
+│  │  nginx.conf
+│  │  scgi_params
+│  │  uwsgi_params
+│  │  win-utf
+│  │
+│  └─server
+│          server1.conf
+│          server2.conf
+│
+├─html
+│  │  50x.html
+│  │  index.html
+│  │
+│  ├─server1
+│  │      index_sr1_location1.html
+│  │      index_sr1_location2.html
+│  │
+│  └─server2
+│          index_sr2_location1.html
+│          index_sr2_location2.html
+│
+├─logs
+│  │  access.log
+│  │  error.log
+│  │  nginx.pid
+│  │
+│  ├─server1
+│  │      access.log
+│  │
+│  └─server2
+│          access.log
+│
+└─temp
+    ├─client_body_temp
+    ├─fastcgi_temp
+    ├─proxy_temp
+    ├─scgi_temp
+    └─uwsgi_temp
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+
+
+### 测试
+
