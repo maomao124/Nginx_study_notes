@@ -3914,5 +3914,164 @@ location /images {
 
 ### index指令
 
+用于设置网站的默认首页
 
+
+
+|  语法  |    index file ...;     |
+| :----: | :--------------------: |
+| 默认值 |   index index.html;    |
+|  位置  | http、server、location |
+
+
+
+index后面可以跟多个设置，如果访问的时候没有指定具体访问的资源，则会依次进行查找，找到第一个为止
+
+
+
+示例：
+
+```sh
+location / {
+	root html;
+	index index.html index.htm;
+}
+```
+
+
+
+访问该location的时候，可以通过 http://ip:port/，地址后面如果不添加任何内容，则默认依次访问index.html和index.htm，找到第一个来进行返回
+
+
+
+
+
+### error_page指令
+
+用于设置网站的错误页面
+
+
+
+|  语法  | error_page code ... [=[response]] uri; |
+| :----: | :------------------------------------: |
+| 默认值 |                   —                    |
+|  位置  |      http、server、location......      |
+
+
+
+可以指定具体跳转的地址
+
+```sh
+server {
+	error_page 404 https://www.bilibili.com/;
+}
+```
+
+
+
+可以指定重定向地址
+
+```sh
+server{
+	error_page 404 /50x.html;
+	error_page 500 502 503 504 /50x.html;
+	location =/50x.html{
+		root html;
+	}
+}
+```
+
+
+
+使用location的@符合完成错误信息展示
+
+```sh
+server{
+	error_page 404 @jump_to_error;
+	location @jump_to_error {
+		default_type text/plain;
+		return 404 'Not Found Page...';
+	}
+}
+```
+
+
+
+可选项`=[response]`的作用是用来将相应代码更改为另外一个
+
+```sh
+server{
+	error_page 404 =200 /50x.html;
+	location =/50x.html{
+		root html;
+	}
+}
+```
+
+
+
+当返回404找不到对应的资源的时候，在浏览器上可以看到，最终返回的状态码是200
+
+编写error_page后面的内容，404后面需要加空格，200前面不能加空格
+
+
+
+
+
+
+
+
+
+## 静态资源优化配置
+
+### sendﬁle
+
+用来开启高效的文件传输模式。零拷贝。
+
+
+
+|  语法  |     sendﬁle on \|oﬀ;      |
+| :----: | :-----------------------: |
+| 默认值 |        sendﬁle oﬀ;        |
+|  位置  | http、server、location... |
+
+
+
+
+
+### tcp_nopush
+
+该指令必须在sendfile打开的状态下才会生效，主要是用来提升网络包的**传输效率**
+
+|  语法  |  tcp_nopush on\|off;   |
+| :----: | :--------------------: |
+| 默认值 |     tcp_nopush oﬀ;     |
+|  位置  | http、server、location |
+
+
+
+
+
+### tcp_nodelay
+
+该指令必须在keep-alive连接开启的情况下才生效，来提高网络包传输的**实时性**
+
+
+
+|  语法  |  tcp_nodelay on\|off;  |
+| :----: | :--------------------: |
+| 默认值 |    tcp_nodelay on;     |
+|  位置  | http、server、location |
+
+
+
+sendfile可以开启高效的文件传输模式，tcp_nopush开启可以确保在发送到客户端之前数据包已经充分“填满”， 这大大减少了网络开销，并加快了文件发送的速度。 然后，当它到达最后一个可能因为没有“填满”而暂停的数据包时，Nginx会忽略tcp_nopush参数， 然后，tcp_nodelay强制套接字发送数据。由此可知，TCP_NOPUSH可以与TCP_NODELAY一起设置，它比单独配置TCP_NODELAY具有更强的性能。
+
+
+
+
+
+
+
+## Nginx静态资源压缩
 
