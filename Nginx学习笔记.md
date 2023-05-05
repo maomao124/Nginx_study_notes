@@ -3716,5 +3716,203 @@ server {
 
 ### location指令
 
+用来设置请求的URI
+
+uri变量是待匹配的请求字符串，可以不包含正则表达式，也可以包含正则表达式，那么nginx服务器在搜索匹配location的时候，是先使用不包含正则表达式进行匹配，找到一个匹配度最高的一个，然后在通过包含正则表达式的进行匹配，如果能匹配到直接访问，匹配不到，就使用刚才匹配度最高的那个location来处理请求。
+
+
+
+|  语法  | location [  =  \|   ~  \|  ~*   \|   ^~   \|@ ] uri{...} |
+| :----: | :------------------------------------------------------: |
+| 默认值 |                            —                             |
+|  位置  |                     server,location                      |
+
+
+
+
+
+不带符号，要求必须以指定模式开始
+
+```sh
+server {
+	listen 80;
+	server_name 127.0.0.1;
+	location /abc{
+		default_type text/plain;
+		return 200 "access success";
+	}
+}
+```
+
+
+
+以下访问都是正确的：
+
+* http://127.0.0.1/abc
+* http://127.0.0.1/abc?key=value
+* http://127.0.0.1/abc/
+* http://127.0.0.1/abcdef
+
+
+
+= :  用于不包含正则表达式的uri前，必须与指定的模式精确匹配
+
+```sh
+server {
+	listen 80;
+	server_name 127.0.0.1;
+	location =/abc{
+		default_type text/plain;
+		return 200 "access success";
+	}
+}
+```
+
+
+
+以下访问都是正确的：
+
+* http://127.0.0.1/abc
+* http://127.0.0.1/abc?key=value
+
+
+
+以下访问都是错误的：
+
+* http://127.0.0.1/abc/
+* http://127.0.0.1/abcdef
+
+
+
+~ ： 用于表示当前uri中包含了正则表达式，并且区分大小写
+
+```sh
+server {
+	listen 80;
+	server_name 127.0.0.1;
+	location ~^/abc\w${
+		default_type text/plain;
+		return 200 "access success";
+	}
+}
+```
+
+
+
+
+
+~*:  用于表示当前uri中包含了正则表达式，并且不区分大小写
+
+```sh
+server {
+	listen 80;
+	server_name 127.0.0.1;
+	location ~*^/abc\w${
+		default_type text/plain;
+		return 200 "access success";
+	}
+}
+```
+
+
+
+^~: 用于不包含正则表达式的uri前，功能和不加符号的一致，唯一不同的是，如果模式匹配，那么就停止搜索其他模式了。
+
+```sh
+server {
+	listen 80;
+	server_name 127.0.0.1;
+	location ^~/abc{
+		default_type text/plain;
+		return 200 "access success";
+	}
+}
+```
+
+
+
+
+
+### root / alias
+
+#### root指令
+
+设置请求的根目录
+
+
+
+|  语法  |       root path;       |
+| :----: | :--------------------: |
+| 默认值 |       root html;       |
+|  位置  | http、server、location |
+
+
+
+path为Nginx服务器接收到请求以后查找资源的根目录路径
+
+
+
+#### alias指令
+
+用来更改location的URI
+
+
+
+|  语法  | alias path; |
+| :----: | :---------: |
+| 默认值 |      —      |
+|  位置  |  location   |
+
+
+
+path为修改后的根路径。
+
+
+
+
+
+#### 区别
+
+假设浏览器要访问/server1/abc/hello.html
+
+页面文件在html/server1/abc/hello.html下
+
+root的路径为：
+
+```sh
+location /images {
+	root html;
+}
+```
+
+
+
+如果把root改为alias，则路径变成：
+
+```sh
+location /images {
+	alias html/server1/abc;
+}
+```
+
+
+
+
+
+#### 总结
+
+* root的处理结果是: root路径+location路径
+* alias的处理结果是:使用alias路径替换location路径
+* alias是一个目录别名的定义，root则是最上层目录的含义
+* 如果location路径是以/结尾,则alias也必须是以/结尾，root没有要求
+
+
+
+
+
+
+
+### index指令
+
 
 
