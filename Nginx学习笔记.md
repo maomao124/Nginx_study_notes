@@ -4075,3 +4075,171 @@ sendfile可以开启高效的文件传输模式，tcp_nopush开启可以确保�
 
 ## Nginx静态资源压缩
 
+### Gzip模块配置指令
+
+以下指令都来自ngx_http_gzip_module模块，该模块会在nginx安装的时候内置到nginx的安装环境中
+
+
+
+#### gzip指令
+
+**该指令用于开启或者关闭gzip功能**
+
+
+
+|  语法  |       gzip on\|off;       |
+| :----: | :-----------------------: |
+| 默认值 |         gzip off;         |
+|  位置  | http、server、location... |
+
+
+
+使用示例：
+
+```sh
+http{
+   gzip on;
+}
+```
+
+
+
+
+
+#### gzip_types指令
+
+该指令可以根据响应页的MIME类型选择性地开启Gzip压缩功能
+
+
+
+|  语法  | gzip_types mime-type ...; |
+| :----: | :-----------------------: |
+| 默认值 |   gzip_types text/html;   |
+|  位置  |  http、server、location   |
+
+
+
+所选择的值可以从mime.types文件中进行查找，也可以使用"*"代表所有。
+
+
+
+使用示例：对js文件压缩：
+
+```sh
+http{
+	gzip_types application/javascript;
+}
+```
+
+
+
+
+
+#### gzip_comp_level指令
+
+该指令用于设置Gzip压缩程度，级别从1-9,1表示要是程度最低，要是效率最高，9刚好相反，压缩程度最高，但是效率最低
+
+
+
+|  语法  | gzip_comp_level level; |
+| :----: | :--------------------: |
+| 默认值 |   gzip_comp_level 1;   |
+|  位置  | http、server、location |
+
+
+
+使用示例：
+
+```sh
+http{
+	gzip_comp_level 5;
+}
+```
+
+
+
+
+
+#### gzip_vary指令
+
+该指令用于设置使用Gzip进行压缩发送是否携带“Vary:Accept-Encoding”头域的响应头部。主要是告诉接收方，所发送的数据经过了Gzip压缩处理
+
+
+
+|  语法  |   gzip_vary on\|off;   |
+| :----: | :--------------------: |
+| 默认值 |     gzip_vary off;     |
+|  位置  | http、server、location |
+
+
+
+使用示例：
+
+```sh
+http{
+	gzip_vary on;
+}
+```
+
+
+
+
+
+
+
+#### gzip_buffers指令
+
+该指令用于处理请求压缩的缓冲区数量和大小
+
+其中number:指定Nginx服务器向系统申请缓存空间个数，size指的是每个缓存空间的大小。主要实现的是申请number个每个大小为size的内存空间。这个值的设定一般会和服务器的操作系统有关，所以建议此项不设置，使用默认值即可
+
+
+
+|  语法  | gzip_buffers number size;  |
+| :----: | :------------------------: |
+| 默认值 | gzip_buffers 32 4k\|16 8k; |
+|  位置  |   http、server、location   |
+
+
+
+使用示例：
+
+```sh
+http{
+	gzip_buffers 16 1024K;
+}
+```
+
+
+
+
+
+#### gzip_disable指令
+
+针对不同种类客户端发起的请求，可以选择性地开启和关闭Gzip功能
+
+regex:根据客户端的浏览器标志(user-agent)来设置，支持使用正则表达式。指定的浏览器标志不使用Gzip.该指令一般是用来排除一些明显不支持Gzip的浏览器
+
+
+
+|  语法  | gzip_disable regex ...; |
+| :----: | :---------------------: |
+| 默认值 |            —            |
+|  位置  | http、server、location  |
+
+
+
+使用示例：
+
+```sh
+http{
+	gzip_disable "MSIE [1-6]\.";
+}
+```
+
+
+
+
+
+#### gzip_http_version指令
+
