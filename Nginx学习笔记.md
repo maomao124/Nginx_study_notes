@@ -4243,3 +4243,213 @@ http{
 
 #### gzip_http_version指令
 
+针对不同的HTTP协议版本，可以选择性地开启和关闭Gzip功能
+
+
+
+|  语法  | gzip_http_version 1.0\|1.1; |
+| :----: | :-------------------------: |
+| 默认值 |   gzip_http_version 1.1;    |
+|  位置  |   http、server、location    |
+
+
+
+使用示例：
+
+```sh
+http{
+	gzip_http_version 1.1;
+}
+```
+
+
+
+
+
+
+
+#### gzip_min_length指令
+
+该指令针对传输数据的大小，可以选择性地开启和关闭Gzip功能
+
+Gzip压缩功能对大数据的压缩效果明显，但是如果要压缩的数据比较小的化，可能出现越压缩数据量越大的情况，因此我们需要根据响应内容的大小来决定是否使用Gzip功能，响应页面的大小可以通过头信息中的`Content-Length`来获取。但是如何使用了Chunk编码动态压缩，该指令将被忽略。建议设置为1K或以上
+
+
+
+|  语法  | gzip_min_length length; |
+| :----: | :---------------------: |
+| 默认值 |   gzip_min_length 20;   |
+|  位置  | http、server、location  |
+
+
+
+使用示例：
+
+```sh
+http{
+	gzip_min_length 1024;
+}
+```
+
+```sh
+http{
+	gzip_min_length 5K;
+}
+```
+
+```sh
+http{
+	gzip_min_length 1M;
+}
+```
+
+
+
+
+
+
+
+#### gzip_proxied指令
+
+该指令设置是否对服务端返回的结果进行Gzip压缩
+
+
+
+|  语法  | gzip_proxied  off\|expired\|no-cache\|<br/>no-store\|private\|no_last_modified\|no_etag\|auth\|any; |
+| :----: | :----------------------------------------------------------: |
+| 默认值 |                      gzip_proxied off;                       |
+|  位置  |                    http、server、location                    |
+
+
+
+使用示例：
+
+```sh
+http{
+	gzip_proxied on;
+}
+```
+
+
+
+
+
+
+
+### Gzip和sendfile共存问题
+
+开启sendfile以后，在读取磁盘上的静态资源文件的时候，可以减少拷贝的次数，可以不经过用户进程将静态文件通过网络设备发送出去，但是Gzip要想对资源压缩，是需要经过用户进程进行操作的。所以两个指令不能共存。
+
+可以使用ngx_http_gzip_static_module模块的gzip_static指令来解决。
+
+
+
+
+
+#### 添加模块到Nginx
+
+使用Linux nginx添加模块
+
+
+
+(1)查询当前Nginx的配置参数
+
+```
+nginx -V
+```
+
+
+
+(2)将nginx安装目录下sbin目录中的nginx二进制文件进行更名
+
+```
+cd /usr/local/nginx/sbin
+mv nginx nginxold
+```
+
+
+
+(3) 进入Nginx的安装目录
+
+```
+cd /root/nginx/core/nginx-1.16.1
+```
+
+
+
+(4)执行make clean清空之前编译的内容
+
+```
+make clean
+```
+
+
+
+(5)使用configure来配置参数
+
+```
+./configure --with-http_gzip_static_module
+```
+
+
+
+(6)使用make命令进行编译
+
+```
+make
+```
+
+
+
+(7) 将objs目录下的nginx二进制执行文件移动到nginx安装目录下的sbin目录中
+
+```
+mv objs/nginx /usr/local/nginx/sbin
+```
+
+
+
+(8)执行更新命令
+
+```
+make upgrade
+```
+
+
+
+
+
+#### gzip_static指令
+
+ 检查与访问资源同名的.gz文件时，response中以gzip相关的header返回.gz文件的内容
+
+
+
+|  语法  | **gzip_static** on \| off \| always; |
+| :----: | :----------------------------------: |
+| 默认值 |           gzip_static off;           |
+|  位置  |        http、server、location        |
+
+
+
+使用示例：
+
+```sh
+http{
+	gzip_static on;
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Nginx静态资源缓存
