@@ -4453,3 +4453,131 @@ http{
 
 
 ## Nginx静态资源缓存
+
+### 缓存的作用
+
+* 成本最低的一种缓存实现
+* 减少网络带宽消耗
+* 降低服务器压力
+* 减少网络延迟，加快页面打开速度
+
+
+
+
+
+### 浏览器缓存的执行流程
+
+HTTP协议中和页面缓存相关的字段：
+
+|    header     |                    说明                     |
+| :-----------: | :-----------------------------------------: |
+|    Expires    |            缓存过期的日期和时间             |
+| Cache-Control |          设置和缓存相关的配置信息           |
+| Last-Modified |            请求资源最后修改时间             |
+|     ETag      | 请求变量的实体标签的当前值，比如文件的MD5值 |
+
+
+
+
+
+![image-20230506143327780](img/Nginx学习笔记/image-20230506143327780.png)
+
+
+
+
+
+1. 用户首次通过浏览器发送请求到服务端获取数据，客户端是没有对应的缓存，所以需要发送request请求来获取数据；
+2. 服务端接收到请求后，获取服务端的数据及服务端缓存的允许后，返回200的成功状态码并且在响应头上附上对应资源以及缓存信息；
+3. 当用户再次访问相同资源的时候，客户端会在浏览器的缓存目录中查找是否存在响应的缓存文件
+4. 如果没有找到对应的缓存文件，则走(2)步
+5. 如果有缓存文件，接下来对缓存文件是否过期进行判断，过期的判断标准是(Expires),
+6. 如果没有过期，则直接从本地缓存中返回数据进行展示
+7. 如果Expires过期，接下来需要判断缓存文件是否发生过变化
+8. 判断的标准有两个，一个是ETag(Entity Tag),一个是Last-Modified
+9. 判断结果是未发生变化，则服务端返回304，直接从缓存文件中获取数据
+10. 如果判断是发生了变化，重新从服务端获取数据，并根据缓存协商(服务端所设置的是否需要进行缓存数据的设置)来进行数据缓存。
+
+
+
+
+
+
+
+### 浏览器缓存相关指令
+
+#### expires指令
+
+该指令用来控制页面缓存的作用。可以通过该指令控制HTTP响应中的“Expires"和”Cache-Control"
+
+
+
+|  语法  | expires   [modified] time<br/>expires epoch\|max\|off; |
+| :----: | :----------------------------------------------------: |
+| 默认值 |                      expires off;                      |
+|  位置  |                 http、server、location                 |
+
+
+
+* time：可以整数也可以是负数，指定过期时间，如果是负数，Cache-Control则为no-cache,如果为整数或0，则Cache-Control的值为max-age=time
+* epoch：指定Expires的值为'1 January,1970,00:00:01 GMT'(1970-01-01 00:00:00)，Cache-Control的值no-cache
+* max：指定Expires的值为'31 December2037 23:59:59GMT' (2037-12-31 23:59:59) ，Cache-Control的值为10年
+* off：默认不缓存
+
+
+
+
+
+#### add_header指令
+
+add_header指令是用来添加指定的响应头和响应值
+
+
+
+|  语法  | add_header name value [always]; |
+| :----: | :-----------------------------: |
+| 默认值 |                —                |
+|  位置  |    http、server、location...    |
+
+
+
+Cache-Control作为响应头信息，可以设置如下值：
+
+缓存响应指令：
+
+```
+Cache-control: must-revalidate
+Cache-control: no-cache
+Cache-control: no-store
+Cache-control: no-transform
+Cache-control: public
+Cache-control: private
+Cache-control: proxy-revalidate
+Cache-Control: max-age=<seconds>
+Cache-control: s-maxage=<seconds>
+```
+
+
+
+|       指令       |                      说明                      |
+| :--------------: | :--------------------------------------------: |
+| must-revalidate  |        可缓存但必须再向源服务器进行确认        |
+|     no-cache     |             缓存前必须确认其有效性             |
+|     no-store     |           不缓存请求或响应的任何内容           |
+|   no-transform   |              代理不可更改媒体类型              |
+|      public      |            可向任意方提供响应的缓存            |
+|     private      |              仅向特定用户返回响应              |
+| proxy-revalidate | 要求中间缓存服务器对缓存的响应有效性再进行确认 |
+|   max-age=<秒>   |                 响应最大Age值                  |
+|  s-maxage=<秒>   |         公共缓存服务器响应的最大Age值          |
+
+max-age=[秒]：
+
+
+
+
+
+
+
+
+
+## Nginx的跨域问题
