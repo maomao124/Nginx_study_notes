@@ -4715,5 +4715,212 @@ Referer的限制比较粗，比如随意加一个Referer，上面的方式是无
 
 
 
+
+
+
+
 ## Rewrite
+
+### 概述
+
+Rewrite是Nginx服务器提供的一个重要基本功能，是Web服务器产品中几乎必备的功能。主要的作用是用来实现URL的重写。
+
+Nginx服务器的Rewrite功能的实现依赖于PCRE的支持，因此在编译安装Nginx服务器之前，需要安装PCRE库。Nginx使用的是ngx_http_rewrite_module模块来解析和处理Rewrite功能的相关配置。
+
+
+
+### 地址重写与地址转发
+
+* 地址重写浏览器地址会发生变化而地址转发则不变
+* 一次地址重写会产生两次请求而一次地址转发只会产生一次请求
+* 地址重写到的页面必须是一个完整的路径而地址转发则不需要
+* 地址重写因为是两次请求所以request范围内属性不能传递给新页面而地址转发因为是一次请求所以可以传递值
+* 地址转发速度快于地址重写
+
+
+
+
+
+### Rewrite常用全局变量
+
+|        变量        |                             说明                             |
+| :----------------: | :----------------------------------------------------------: |
+|       $args        | 变量中存放了请求URL中的请求指令。比如http://192.168.200.133:8080?arg1=value1&args2=value2中的"arg1=value1&arg2=value2"，功能和$query_string一样 |
+|  $http_user_agent  | 变量存储的是用户访问服务的代理信息(如果通过浏览器访问，记录的是浏览器的相关版本信息) |
+|       $host        |            变量存储的是访问服务器的server_name值             |
+|   $document_uri    | 变量存储的是当前访问地址的URI。比如http://192.168.200.133/server?id=10&name=zhangsan中的"/server"，功能和$uri一样 |
+|   $document_root   | 变量存储的是当前请求对应location的root值，如果未设置，默认指向Nginx自带html目录所在位置 |
+|  $content_length   |           变量存储的是请求头中的Content-Length的值           |
+|   $content_type    |            变量存储的是请求头中的Content-Type的值            |
+|    $http_cookie    | 变量存储的是客户端的cookie信息，可以通过add_header Set-Cookie 'cookieName=cookieValue'来添加cookie数据 |
+|    $limit_rate     | 变量中存储的是Nginx服务器对网络连接速率的限制，也就是Nginx配置中对limit_rate指令设置的值，默认是0，不限制。 |
+|    $remote_addr    |                 变量中存储的是客户端的IP地址                 |
+|    $remote_port    |          变量中存储了客户端与服务端建立连接的端口号          |
+|    $remote_user    |      变量中存储了客户端的用户名，需要有认证模块才能获取      |
+|      $scheme       |                     变量中存储了访问协议                     |
+|    $server_addr    |                   变量中存储了服务端的地址                   |
+|    $server_name    |           变量中存储了客户端请求到达的服务器的名称           |
+|    $server_port    |           变量中存储了客户端请求到达服务器的端口号           |
+|  $server_protocol  |       变量中存储了客户端请求协议的版本，比如"HTTP/1.1"       |
+| $request_body_file |        变量中存储了发给后端服务器的本地文件资源的名称        |
+|  $request_method   |       变量中存储了客户端的请求方式，比如"GET","POST"等       |
+| $request_filename  |            变量中存储了当前请求的资源文件的路径名            |
+|    $request_uri    | 变量中存储了当前请求的URI，并且携带请求参数，比如http://192.168.200.133/server?id=10&name=zhangsan中的"/server?id=10&name=zhangsan" |
+
+
+
+
+
+### Rewrite规则
+
+#### set指令
+
+该指令用来设置一个新的变量。
+
+
+
+|  语法  | set $variable value; |
+| :----: | :------------------: |
+| 默认值 |          —           |
+|  位置  | server、location、if |
+
+
+
+* variable：变量的名称，该变量名称要用"$"作为变量的第一个字符，且不能与Nginx服务器预设的全局变量同名。
+* value：变量的值，可以是字符串、其他变量或者变量的组合等。
+
+
+
+示例：
+
+```sh
+location /images {
+           set $disabled 1
+           if ($disabled){
+                return 404;
+           }
+           root html;
+
+}
+```
+
+
+
+
+
+#### if指令
+
+该指令用来支持条件判断，并根据条件判断结果选择不同的Nginx配置
+
+
+
+|  语法  | if  (condition){...} |
+| :----: | :------------------: |
+| 默认值 |          —           |
+|  位置  |   server、location   |
+
+
+
+condition为判定条件，可以支持以下写法：
+
+* 变量名。如果变量名对应的值为空或者是0，if都判断为false,其他条件为true
+
+```sh
+if ($param){
+	
+}
+```
+
+
+
+* 使用"="和"!="比较变量和字符串是否相等，满足条件为true，不满足为false
+
+```sh
+if ($request_method = POST){
+	return 405;
+}
+```
+
+
+
+* 使用正则表达式对变量进行匹配，匹配成功返回true，否则返回false。变量与正则表达式之间使用"~","~*","!~","!~\*"来连接
+  * "~"代表匹配正则表达式过程中区分大小写
+  * "~\*"代表匹配正则表达式过程中不区分大小写
+  * "!~"和"!~\*"刚好和上面取相反值，如果匹配上返回false,匹配不上返回true
+
+```sh
+if ($http_user_agent ~ MSIE){
+	#$http_user_agent的值中是否包含MSIE字符串，如果包含返回true
+}
+```
+
+正则表达式字符串一般不需要加引号，但是如果字符串中包含"}"或者是";"等字符时，就需要把引号加上。
+
+
+
+* 判断请求的文件是否存在使用"-f"和"!-f"
+  * 当使用"-f"时，如果请求的文件存在返回true，不存在返回false
+  * 当使用"!f"时，如果请求文件不存在，但该文件所在目录存在返回true,文件和目录都不存在返回false,如果文件存在返回false
+
+```sh
+if (-f $request_filename){
+	#判断请求的文件是否存在
+}
+```
+
+```sh
+if (!-f $request_filename){
+	#判断请求的文件是否不存在
+}
+```
+
+
+
+* 判断请求的目录是否存在使用"-d"和"!-d"
+  * 当使用"-d"时，如果请求的目录存在，如果目录存在返回true，如果目录不存在则返回false
+  * 当使用"!-d"时，如果请求的目录不存在但该目录的上级目录存在则返回true，该目录和它上级目录都不存在则返回false,如果请求目录存在也返回false
+
+```sh
+set $request_dir html/a/b/c
+if (-d $request_dir){
+	#判断请求的目录是否存在
+}
+```
+
+```sh
+set $request_dir html/a/b/c
+if (!-d $request_dir){
+	#判断请求的目录是否不存在
+}
+```
+
+
+
+* 判断请求的目录或者文件是否存在使用"-e"和"!-e"
+  * 当使用"-e",如果请求的目录或者文件存在时，如果目录或者文件存在返回true,否则返回false.
+  * 当使用"!-e",如果请求的文件和文件所在路径上的目录都不存在返回true,否则返回false
+
+```sh
+if (-e $request_filename){
+	#判断请求的文件或者目录是否存在
+}
+```
+
+
+
+* 判断请求的文件是否可执行使用"-x"和"!-x"
+  * 当使用"-x",如果请求的文件可执行，if返回true,否则返回false
+  * 当使用"!-x",如果请求文件不可执行，返回true,否则返回false
+
+```sh
+if (-x $request_filename){
+	#判断请求的文件是否可执行
+}
+```
+
+
+
+
+
+#### break指令
 
