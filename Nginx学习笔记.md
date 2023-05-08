@@ -4464,7 +4464,6 @@ http{
 
 
 
-
 ### 浏览器缓存的执行流程
 
 HTTP协议中和页面缓存相关的字段：
@@ -4581,3 +4580,140 @@ max-age=[秒]：
 
 
 ## Nginx的跨域问题
+
+### 概述
+
+同源策略：
+
+浏览器的同源策略：是一种约定，是浏览器最核心也是最基本的安全功能，如果浏览器少了同源策略，则浏览器的正常功能可能都会受到影响。
+
+同源:  协议、域名(IP)、端口相同即为同源
+
+
+
+跨域指有两台服务器分别为A,B,如果从服务器A的页面发送异步请求到服务器B获取数据，如果服务器A和服务器B不满足同源策略，则就会出现跨域问题。
+
+
+
+
+
+### 解决
+
+使用add_header指令，该指令可以用来添加一些头信息
+
+此处用来解决跨域问题，需要添加两个头信息，一个是`Access-Control-Allow-Origin`,`Access-Control-Allow-Methods`
+
+* Access-Control-Allow-Origin: 直译过来是允许跨域访问的源地址信息，可以配置多个(多个用逗号分隔)，也可以使用`*`代表所有源
+* Access-Control-Allow-Methods:直译过来是允许跨域访问的请求方式，值可以为 GET POST PUT DELETE...,可以全部设置，也可以根据需要设置，多个用逗号分隔
+
+
+
+使用示例：
+
+```sh
+location / {
+    add_header Access-Control-Allow-Origin *;
+    add_header Access-Control-Allow-Methods GET,POST,PUT,DELETE;
+    root html;
+    index index.html;
+}
+```
+
+
+
+
+
+
+
+
+
+## 静态资源防盗链
+
+### 概述
+
+资源盗链指的是此内容不在自己服务器上，而是通过技术手段，绕过别人的限制将别人的内容放到自己页面上最终展示给用户。以此来盗取大网站的空间和流量。简而言之就是用别人的东西成就自己的网站。
+
+
+
+### 防盗链的实现原理
+
+发起HTTP请求时会携带HTTP的头信息Referer，当浏览器向web服务器发送请求的时候，一般都会带上Referer，告诉浏览器该网页是从哪个页面链接过来的。
+
+后台服务器可以根据获取到的这个Referer信息来判断是否为自己信任的网站地址，如果是则放行继续访问，如果不是则可以返回403(服务端拒绝访问)的状态信息。
+
+![image-20230508141352404](img/Nginx学习笔记/image-20230508141352404.png)
+
+
+
+
+
+#### valid_referers指令
+
+nginx会通就过查看referer自动和valid_referers后面的内容进行匹配，如果匹配到了就将$invalid_referer变量置0，如果没有匹配到，则将\$invalid_referer变量置为1，匹配的过程中不区分大小写。
+
+
+
+|  语法  | valid_referers none\|blocked\|server_names\|string... |
+| :----: | :---------------------------------------------------: |
+| 默认值 |                           —                           |
+|  位置  |                   server、location                    |
+
+
+
+* none：如果Header中的Referer为空，允许访问
+* blocked：在Header中的Referer不为空，但是该值被防火墙或代理进行伪装过，如不带"http://" 、"https://"等协议头的资源允许访问。
+* server_names：指定具体的域名或者IP
+* string：可以支持正则表达式和*的字符串。如果是正则表达式，需要以`~`开头表示
+
+
+
+```sh
+location ~*\.(png|jpg|gif){
+           valid_referers none blocked www.baidu.com;
+           if ($invalid_referer){
+                return 403;
+           }
+           root html;
+
+}
+```
+
+
+
+
+
+#### 针对目录进行防盗链
+
+```sh
+location /images {
+           valid_referers none blocked www.baidu.com;
+           if ($invalid_referer){
+                return 403;
+           }
+           root html;
+
+}
+```
+
+
+
+
+
+### 存在的问题
+
+Referer的限制比较粗，比如随意加一个Referer，上面的方式是无法进行限制的。
+
+可以使用Nginx的第三方模块`ngx_http_accesskey_module`来解决问题
+
+
+
+
+
+
+
+
+
+
+
+## Rewrite
+
