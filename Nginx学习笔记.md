@@ -5036,3 +5036,159 @@ location /test {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+# Nginx反向代理
+
+## 概述
+
+反向代理服务器位于用户与目标服务器之间，但是对于用户而言，反向代理服务器就相当于目标服务器，即用户直接访问反向代理服务器就可以获得目标服务器的资源。同时，用户不需要知道目标服务器的地址，也无须在用户端作任何设定。反向代理服务器通常可用来作为Web加速，即使用反向代理作为Web服务器的前置机来降低网络和服务器的负载，提高访问效率
+
+简而言之就是正向代理代理的对象是客户端，反向代理代理的是服务端
+
+Nginx即可以实现正向代理，也可以实现反向代理。
+
+
+
+
+
+
+
+## 反向代理的配置语法
+
+Nginx反向代理模块的指令是由`ngx_http_proxy_module`模块进行解析，该模块在安装Nginx的时候已经自己加装到Nginx中了
+
+
+
+
+
+### proxy_pass
+
+该指令用来设置被代理服务器地址，可以是主机名称、IP地址加端口号形式。
+
+
+
+|  语法  | proxy_pass URL; |
+| :----: | :-------------: |
+| 默认值 |        —        |
+|  位置  |    location     |
+
+
+
+* URL：要设置的被代理服务器地址。包含传输协议(`http`,`https://`)、主机名称或IP地址加端口号、URI等要素。
+
+
+
+使用示例：
+
+```sh
+location /{
+  proxy_pass http://192.168.200.146
+}
+```
+
+
+
+
+
+### proxy_set_header
+
+该指令可以更改Nginx服务器接收到的客户端请求的请求头信息，然后将新的请求头发送给代理的服务器
+
+
+
+|  语法  |                proxy_set_header field value;                 |
+| :----: | :----------------------------------------------------------: |
+| 默认值 | proxy_set_header Host $proxy_host;<br/>proxy_set_header Connection close; |
+|  位置  |                    http、server、location                    |
+
+
+
+使用示例：
+
+```sh
+        location /server {
+                proxy_pass http://192.168.200.146:8080/;
+                proxy_set_header key value;
+        }
+```
+
+
+
+
+
+
+
+### proxy_redirect
+
+该指令是用来重置头信息中的"Location"和"Refresh"的值
+
+
+
+|  语法  | proxy_redirect redirect replacement;<br/>proxy_redirect default;<br/>proxy_redirect off; |
+| :----: | :----------------------------------------------------------: |
+| 默认值 |                   proxy_redirect default;                    |
+|  位置  |                    http、server、location                    |
+
+
+
+* redirect：目标,Location的值
+* replacement：要替换的值
+* default：将location块的uri变量作为replacement，将proxy_pass变量作为redirect进行替换
+* off：关闭功能
+
+
+
+服务端[192.168.200.146]
+
+```sh
+server {
+    listen  8081;
+    server_name localhost;
+    if (!-f $request_filename){
+    	return 302 http://192.168.200.146;
+    }
+}
+```
+
+
+
+代理服务端[192.168.200.133]
+
+```sh
+server {
+	listen  8081;
+	server_name localhost;
+	location / {
+		proxy_pass http://192.168.200.146:8081/;
+		proxy_redirect http://192.168.200.146 http://192.168.200.133;
+	}
+}
+```
+
+
+
+如果不使用proxy_redirect指令，服务端重定向时，会把服务端的真实ip地址发送到客户端（浏览器）
+
+
+
+
+
+
+
+
+
+
+
+## 反向代理实现
+
