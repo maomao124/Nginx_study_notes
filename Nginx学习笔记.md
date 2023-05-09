@@ -4924,3 +4924,115 @@ if (-x $request_filename){
 
 #### break指令
 
+该指令用于中断当前相同作用域中的其他Nginx配置。与该指令处于同一作用域的Nginx配置中，位于它前面的指令配置生效，位于后面的指令配置无效。
+
+
+
+|  语法  |        break;        |
+| :----: | :------------------: |
+| 默认值 |          —           |
+|  位置  | server、location、if |
+
+
+
+示例：
+
+```sh
+location / {
+	if ($param){
+		set $id $1;
+		break;
+		limit_rate 10k;
+	}
+}
+```
+
+
+
+
+
+#### return指令
+
+该指令用于完成对请求的处理，直接向客户端返回响应状态代码。在return后的所有Nginx配置都是无效的。
+
+
+
+|  语法  | return code [text];<br/>return code URL;<br/>return URL; |
+| :----: | :------------------------------------------------------: |
+| 默认值 |                            —                             |
+|  位置  |                   server、location、if                   |
+
+
+
+* code：为返回给客户端的HTTP状态代理。可以返回的状态代码为0~999的任意HTTP状态代理
+* text：为返回给客户端的响应体内容，支持变量的使用
+* URL：为返回给客户端的URL地址
+
+
+
+```sh
+location /test {
+	return 405;
+}
+```
+
+```sh
+location /test {
+	return 200 "<h1>test</h1>";
+}
+```
+
+```sh
+location /test {
+	return 200 https://www.bilibili.com/;
+}
+```
+
+
+
+
+
+#### rewrite指令
+
+该指令通过正则表达式的使用来改变URI。可以同时存在一个或者多个指令，按照顺序依次对URL进行匹配和处理。
+
+
+
+|  语法  | rewrite regex replacement [flag]; |
+| :----: | :-------------------------------: |
+| 默认值 |                 —                 |
+|  位置  |       server、location、if        |
+
+
+
+* regex：用来匹配URI的正则表达式
+* replacement：匹配成功后，用于替换URI中被截取内容的字符串。如果该字符串是以"http://"或者"https://"开头的，则不会继续向下对URI进行其他处理，而是直接返回重写后的URI给客户端
+* flag：用来设置rewrite对URI的处理行为，可选值有如下：
+  * last:
+  * break
+  * redirect
+  * permanent
+
+
+
+
+
+#### rewrite_log指令
+
+该指令配置是否开启URL重写日志的输出功能
+
+
+
+|  语法  |    rewrite_log on\|off;    |
+| :----: | :------------------------: |
+| 默认值 |      rewrite_log off;      |
+|  位置  | http、server、location、if |
+
+开启后，URL重写的相关日志将以notice级别输出到error_log指令配置的日志文件汇总。
+
+
+
+
+
+
+
