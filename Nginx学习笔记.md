@@ -5192,3 +5192,207 @@ server {
 
 ## 反向代理实现
 
+### 需求
+
+有三台服务器，服务器的内容不一样，要求访问/server1地址，访问的是服务器1的内容，访问/server2地址，访问的是服务器2的内容，访问/server3地址，访问的是服务器3的内容
+
+![image-20230510133746575](img/Nginx学习笔记/image-20230510133746575.png)
+
+
+
+
+
+
+
+### 实现
+
+创建一个spring boot程序
+
+* server1：端口为9091
+* server2：端口为9092
+* server3：端口为9093
+
+
+
+程序的Controller如下：
+
+```java
+package mao.nginx_reverse_proxy_demo.controller;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * Project name(项目名称)：nginx-reverse-proxy-demo
+ * Package(包名): mao.nginx_reverse_proxy_demo.controller
+ * Class(类名): TestController
+ * Author(作者）: mao
+ * Author QQ：1296193245
+ * GitHub：https://github.com/maomao124/
+ * Date(创建日期)： 2023/5/10
+ * Time(创建时间)： 13:44
+ * Version(版本): 1.0
+ * Description(描述)： 测试nginx反向代理
+ */
+
+
+@RestController
+public class TestController
+{
+    /**
+     * 日志
+     */
+    private static final Logger log = LoggerFactory.getLogger(TestController.class);
+
+    private static final String UUID;
+
+    private static final AtomicLong ATOMIC_LONG = new AtomicLong(0);
+
+    static
+    {
+        UUID = java.util.UUID.randomUUID().toString();
+        log.info("当前实例id为：" + UUID);
+    }
+
+    @GetMapping("/")
+    public String ping(HttpServletRequest httpServletRequest)
+    {
+        long count = ATOMIC_LONG.incrementAndGet();
+        String remoteAddr = httpServletRequest.getRemoteAddr();
+        log.info(remoteAddr + "访问当前实例,访问计数：" + count);
+        return "当前机器id：" + UUID + "<br>" + "当前访问ip：" + remoteAddr + "<br>访问计数：" + count;
+    }
+}
+```
+
+
+
+server2的启动命令：
+
+```sh
+java -jar nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar --server.port=9092
+```
+
+
+
+server3的启动命令：
+
+```sh
+java -jar nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar --server.port=9093
+```
+
+
+
+访问测试
+
+![image-20230510140510427](img/Nginx学习笔记/image-20230510140510427.png)
+
+![image-20230510140524142](img/Nginx学习笔记/image-20230510140524142.png)
+
+
+
+![image-20230510140535353](img/Nginx学习笔记/image-20230510140535353.png)
+
+
+
+
+
+配置代理服务器nginx.conf
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location /server1 {
+                proxy_pass http://127.0.0.1:9091/;
+        }
+        location /server2 {
+                proxy_pass http://127.0.0.1:9092/;
+        }
+        location /server3 {
+                proxy_pass http://127.0.0.1:9093/;
+        }
+}
+}
+```
+
+
+
+检查配置是否有错误：
+
+```sh
+PS D:\opensoft\nginx-1.24.0> nginx -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+启动nginx，访问8080端口
+
+
+
+http://localhost:8080/server1
+
+![image-20230510141038648](img/Nginx学习笔记/image-20230510141038648.png)
+
+
+
+http://localhost:8080/server2
+
+![image-20230510141051832](img/Nginx学习笔记/image-20230510141051832.png)
+
+http://localhost:8080/server3
+
+![image-20230510141114090](img/Nginx学习笔记/image-20230510141114090.png)
+
+
+
+
+
+
+
+
+
+
+
+## 反向代理系统调优
+
+### proxy_buffering指令
+
