@@ -5396,3 +5396,107 @@ http://localhost:8080/server3
 
 ### proxy_buffering指令
 
+该指令用来开启或者关闭代理服务器的缓冲区
+
+
+
+|  语法  | proxy_buffering on\|off; |
+| :----: | :----------------------: |
+| 默认值 |   proxy_buffering on;    |
+|  位置  |  http、server、location  |
+
+
+
+
+
+### proxy_buffers指令
+
+该指令用来指定单个连接从代理服务器读取响应的缓存区的个数和大小
+
+
+
+|  语法  |        proxy_buffers number size;         |
+| :----: | :---------------------------------------: |
+| 默认值 | proxy_buffers 8 4k \| 8K;(与系统平台有关) |
+|  位置  |          http、server、location           |
+
+
+
+* number：缓冲区的个数
+* size：每个缓冲区的大小，缓冲区的总大小就是number*size
+
+
+
+
+
+### proxy_buffer_size指令
+
+该指令用来设置从被代理服务器获取的第一部分响应数据的大小
+
+
+
+|  语法  |           proxy_buffer_size size;           |
+| :----: | :-----------------------------------------: |
+| 默认值 | proxy_buffer_size 4k \| 8k;(与系统平台有关) |
+|  位置  |           http、server、location            |
+
+
+
+
+
+### proxy_busy_buffers_size指令
+
+该指令用来限制同时处于BUSY状态的缓冲总大小
+
+
+
+|  语法  |  proxy_busy_buffers_size size;   |
+| :----: | :------------------------------: |
+| 默认值 | proxy_busy_buffers_size 8k\|16K; |
+|  位置  |      http、server、location      |
+
+
+
+
+
+### proxy_temp_path指令
+
+当缓冲区存满后，仍未被Nginx服务器完全接受，响应数据就会被临时存放在磁盘文件上，该指令设置文件路径
+
+
+
+|  语法  |   proxy_temp_path  path;    |
+| :----: | :-------------------------: |
+| 默认值 | proxy_temp_path proxy_temp; |
+|  位置  |   http、server、location    |
+
+
+
+
+
+### proxy_temp_file_write_size指令
+
+该指令用来设置磁盘上缓冲文件的大小
+
+
+
+|  语法  |  proxy_temp_file_write_size size;   |
+| :----: | :---------------------------------: |
+| 默认值 | proxy_temp_file_write_size 8K\|16K; |
+|  位置  |       http、server、location        |
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Nginx安全控制
