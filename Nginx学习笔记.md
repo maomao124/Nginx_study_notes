@@ -5829,5 +5829,207 @@ server {
 
 ## Nginx的用户认证
 
+### 概述
 
+对应系统资源的访问，我们往往需要限制谁能访问，谁不能访问。这块就是我们通常所说的认证部分，认证需要做的就是根据用户输入的用户名和密码来判定用户是否为合法用户，如果是则放行访问，如果不是则拒绝访问。
+
+Nginx对应用户认证这块是通过ngx_http_auth_basic_module模块来实现的，它允许通过使用"HTTP基本身份验证"协议验证用户名和密码来限制对资源的访问。默认情况下nginx是已经安装了该模块，如果不需要则使用--without-http_auth_basic_module
+
+
+
+
+
+
+
+### 相关指令
+
+#### auth_basic指令
+
+使用“ HTTP基本认证”协议启用用户名和密码的验证
+
+开启后，服务端会返回401，指定的字符串会返回到客户端，给用户以提示信息，但是不同的浏览器对内容的展示不一致
+
+
+
+|  语法  |      auth_basic string\|off;      |
+| :----: | :-------------------------------: |
+| 默认值 |          auth_basic off;          |
+|  位置  | http,server,location,limit_except |
+
+
+
+
+
+#### auth_basic_user_file指令
+
+指定用户名和密码所在文件
+
+指定文件路径，该文件中的用户名和密码的设置，密码需要进行加密。可以采用工具自动生成
+
+
+
+|  语法  |    auth_basic_user_file file;     |
+| :----: | :-------------------------------: |
+| 默认值 |                 —                 |
+|  位置  | http,server,location,limit_except |
+
+
+
+
+
+### 实现
+
+密码文件的格式如下：
+
+```sh
+name1:password1
+name2:password2
+name3:password3
+......
+```
+
+
+
+生成文件
+
+可以用Apache HTTP Server发行包中的htpasswd命令或者openssl passwd来创建此类文件
+
+
+
+```sh
+PS C:\Users\mao\Desktop> openssl passwd 12345
+$1$1vr9J5qv$W3uesrt13hR16STkCbKir/
+PS C:\Users\mao\Desktop> openssl passwd 12345
+$1$b79DyDEL$.Ir3OZixewfBznpmwzyx50
+PS C:\Users\mao\Desktop>
+```
+
+
+
+```sh
+echo "admin:$1$b79DyDEL$.Ir3OZixewfBznpmwzyx50" > password
+```
+
+
+
+将文件放入的nginx的conf目录里
+
+```sh
+PS D:\opensoft\nginx-1.24.0\conf> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\conf
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/4/29     14:43                conf-backup
+d-----          2023/5/3     14:16                server
+------         2023/4/11     23:31           1103 fastcgi.conf
+------         2023/4/11     23:31           1032 fastcgi_params
+------         2023/4/11     23:31           2946 koi-utf
+------         2023/4/11     23:31           2326 koi-win
+------         2023/4/11     23:31           5448 mime.types
+-a----         2023/5/12     14:55            990 nginx.conf
+-a----         2023/5/12     14:37             64 password
+------         2023/4/11     23:31            653 scgi_params
+------         2023/4/11     23:31            681 uwsgi_params
+------         2023/4/11     23:31           3736 win-utf
+
+
+PS D:\opensoft\nginx-1.24.0\conf>
+```
+
+
+
+
+
+配置nginx.conf
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                root html;
+                index index.html;
+                auth_basic 'need auth';
+                auth_basic_user_file password;
+        }
+}
+}
+```
+
+
+
+校验和启动
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ./nginx -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0> start ./nginx
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+访问
+
+随便输入一个uri
+
+http://localhost:8080/test
+
+![image-20230512145050206](img/Nginx学习笔记/image-20230512145050206.png)
+
+
+
+![image-20230512145748173](img/Nginx学习笔记/image-20230512145748173.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Nginx负载均衡
 
