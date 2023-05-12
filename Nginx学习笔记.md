@@ -5682,3 +5682,152 @@ server{
 
 ### 生成证书
 
+生成证书的方式主要有两种：
+
+* 使用阿里云/腾讯云等第三方服务进行购买
+* 使用openssl生成证书
+
+
+
+
+
+#### 阿里云购买
+
+登录阿里云，点击左上方
+
+https://home.console.aliyun.com/home/dashboard/ProductAndService
+
+![image-20230512135036508](img/Nginx学习笔记/image-20230512135036508.png)
+
+
+
+搜索ssl
+
+![image-20230512140322740](img/Nginx学习笔记/image-20230512140322740.png)
+
+
+
+点击SSL证书
+
+购买需要域名
+
+![image-20230512140538910](img/Nginx学习笔记/image-20230512140538910.png)
+
+
+
+
+
+#### openssl生成证书
+
+先要确认当前系统是否有安装openssl
+
+```sh
+PS C:\Users\mao\Desktop> openssl version
+OpenSSL 3.1.0 14 Mar 2023 (Library: OpenSSL 3.1.0 14 Mar 2023)
+PS C:\Users\mao\Desktop>
+```
+
+
+
+命令：
+
+```sh
+openssl genrsa -des3 -out server.key 1024
+openssl req -new -key server.key -out server.csr
+cp server.key server.key.org
+openssl rsa -in server.key.org -out server.key
+openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+```
+
+
+
+```sh
+PS C:\Users\mao\Desktop> openssl genrsa -des3 -out server.key 1024
+Enter PEM pass phrase:
+Verifying - Enter PEM pass phrase:
+PS C:\Users\mao\Desktop> openssl req -new -key server.key -out server.csr
+Enter pass phrase for server.key:
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) [AU]:cn
+State or Province Name (full name) [Some-State]:test
+Locality Name (eg, city) []:test
+Organization Name (eg, company) [Internet Widgits Pty Ltd]:test
+Organizational Unit Name (eg, section) []:test
+Common Name (e.g. server FQDN or YOUR name) []:test
+Email Address []:test
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:test
+An optional company name []:test
+PS C:\Users\mao\Desktop> cp server.key server.key.org
+PS C:\Users\mao\Desktop> openssl rsa -in server.key.org -out server.key
+Enter pass phrase for server.key.org:
+writing RSA key
+PS C:\Users\mao\Desktop> openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt
+Certificate request self-signature ok
+subject=C = cn, ST = test, L = test, O = test, OU = test, CN = test, emailAddress = test
+PS C:\Users\mao\Desktop>
+```
+
+
+
+
+
+![image-20230512141556774](img/Nginx学习笔记/image-20230512141556774.png)
+
+
+
+
+
+
+
+### 示例
+
+```sh
+server {
+    listen       443 ssl;
+    server_name  localhost;
+
+    ssl_certificate      server.cert;
+    ssl_certificate_key  server.key;
+
+    ssl_session_cache    shared:SSL:1m;
+    ssl_session_timeout  5m;
+
+    ssl_ciphers  HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers  on;
+
+    location / {
+        root   html;
+        index  index.html index.htm;
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Nginx的用户认证
+
+
+
