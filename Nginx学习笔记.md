@@ -5500,3 +5500,185 @@ http://localhost:8080/server3
 
 
 # Nginx安全控制
+
+## 安全隔离
+
+通过代理分开了客户端到web程序服务器端的连接，实现了安全措施。在反向代理之前设置防火墙，仅留一个入口供代理服务器访问
+
+
+
+![image-20230511141503410](img/Nginx学习笔记/image-20230511141503410.png)
+
+
+
+
+
+## 使用SSL对流量进行加密
+
+### 概述
+
+就是使用https请求，而不是使用http请求。这两个之间的区别简单的来说两个都是HTTP协议，只不过https是身披SSL外壳的http
+
+HTTPS是一种通过计算机网络进行安全通信的传输协议。它经由HTTP进行通信，利用SSL/TLS建立全通信，加密数据包，确保数据的安全性。
+
+SSL(Secure Sockets Layer)安全套接层
+
+TLS(Transport Layer Security)传输层安全
+
+上述这两个是为网络通信提供安全及数据完整性的一种安全协议，TLS和SSL在传输层和应用层对网络连接进行加密。
+
+
+
+为什么要使用HTTPS？
+
+http协议是明文传输数据，存在安全问题，而https是加密传输，相当于http+ssl，并且可以防止流量劫持。
+
+Nginx要想使用SSL，需要满足一个条件即需要添加一个模块`--with-http_ssl_module`,而该模块在编译的过程中又需要OpenSSL的支持
+
+
+
+
+
+### nginx添加SSL的支持
+
+1. 将原有/usr/local/nginx/sbin/nginx进行备份
+2. 拷贝nginx之前的配置信息
+3. 在nginx的安装源码进行配置指定对应模块  ./configure --with-http_ssl_module
+4. 通过make模板进行编译
+5. 将objs下面的nginx移动到/usr/local/nginx/sbin下
+6. 在源码目录下执行  make upgrade进行升级，这个可以实现不停机添加新模块的功能
+
+
+
+
+
+
+
+### 相关指令
+
+#### ssl指令
+
+该指令用来在指定的服务器开启HTTPS,可以使用 listen 443 ssl,后面这种方式更通用些
+
+
+
+|  语法  | ssl on \| off; |
+| :----: | :------------: |
+| 默认值 |    ssl off;    |
+|  位置  |  http、server  |
+
+
+
+使用示例：
+
+```sh
+server{
+	listen 443 ssl;
+}
+```
+
+
+
+
+
+#### ssl_certificate指令
+
+为当前这个虚拟主机指定一个带有PEM格式证书的证书
+
+
+
+|  语法  | ssl_certificate file; |
+| :----: | :-------------------: |
+| 默认值 |           —           |
+|  位置  |     http、server      |
+
+
+
+
+
+
+
+#### ssl_certificate_key指令
+
+该指令用来指定PEM secret key文件的路径
+
+
+
+|  语法  | ssl_ceritificate_key file; |
+| :----: | :------------------------: |
+| 默认值 |             —              |
+|  位置  |        http、server        |
+
+
+
+
+
+#### ssl_session_cache指令
+
+该指令用来配置用于SSL会话的缓存
+
+
+
+|  语法  | ssl_sesion_cache off\|none\|[builtin[:size]] [shared:name:size] |
+| :----: | :----------------------------------------------------------: |
+| 默认值 |                   ssl_session_cache none;                    |
+|  位置  |                         http、server                         |
+
+
+
+* off：禁用会话缓存，客户端不得重复使用会话
+* none：禁止使用会话缓存，客户端可以重复使用，但是并没有在缓存中存储会话参数
+* builtin：内置OpenSSL缓存，仅在一个工作进程中使用
+* shared：所有工作进程之间共享缓存，缓存的相关信息用name和size来指定
+
+
+
+
+
+#### ssl_session_timeout指令
+
+开启SSL会话功能后，设置客户端能够反复使用储存在缓存中的会话参数时间
+
+
+
+|  语法  | ssl_session_timeout time; |
+| :----: | :-----------------------: |
+| 默认值 |  ssl_session_timeout 5m;  |
+|  位置  |       http、server        |
+
+
+
+
+
+#### ssl_ciphers指令
+
+指出允许的密码，密码指定为OpenSSL支持的格式
+
+
+
+|  语法  |     ssl_ciphers ciphers;      |
+| :----: | :---------------------------: |
+| 默认值 | ssl_ciphers HIGH:!aNULL:!MD5; |
+|  位置  |         http、server          |
+
+
+
+
+
+#### ssl_prefer_server_ciphers指令
+
+该指令指定是否服务器密码优先客户端密码
+
+
+
+|  语法  | ssl_perfer_server_ciphers on\|off; |
+| :----: | :--------------------------------: |
+| 默认值 |   ssl_perfer_server_ciphers off;   |
+|  位置  |            http、server            |
+
+
+
+
+
+### 生成证书
+
