@@ -6140,3 +6140,384 @@ http://localhost:8080/test
 
 ## Nginx七层负载均衡
 
+Nginx要实现七层负载均衡需要用到proxy_pass代理模块配置
+
+Nginx的负载均衡是在Nginx的反向代理基础上把用户的请求根据指定的算法分发到一组**upstream虚拟服务池**
+
+
+
+### 相关指令
+
+#### upstream指令
+
+该指令是用来定义一组服务器，它们可以是监听不同端口的服务器，并且也可以是同时监听TCP和Unix socket的服务器。服务器可以指定不同的权重，默认为1
+
+
+
+|  语法  | upstream name {...} |
+| :----: | :-----------------: |
+| 默认值 |          —          |
+|  位置  |        http         |
+
+
+
+
+
+#### server指令
+
+该指令用来指定后端服务器的名称和一些参数，可以使用域名、IP、端口或者unix socket
+
+
+
+|  语法  | server name [paramerters] |
+| :----: | :-----------------------: |
+| 默认值 |             —             |
+|  位置  |         upstream          |
+
+
+
+使用示例：
+
+```sh
+upstream testserver{
+	server 127.0.0.1:9091;
+	server 127.0.0.1:9092;
+	server 127.0.0.1:9093;
+}
+```
+
+
+
+
+
+
+
+### 实现
+
+启动反向代理章节生成的jar包
+
+* server1：端口为9091
+* server2：端口为9092
+* server3：端口为9093
+
+
+
+
+
+
+
+server1的启动命令：
+
+```sh
+java -jar nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar --server.port=9091
+```
+
+
+
+server2的启动命令：
+
+```sh
+java -jar nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar --server.port=9092
+```
+
+
+
+server3的启动命令：
+
+```sh
+java -jar nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar --server.port=9093
+```
+
+
+
+![image-20230513130749175](img/Nginx学习笔记/image-20230513130749175.png)
+
+
+
+![image-20230513130847122](img/Nginx学习笔记/image-20230513130847122.png)
+
+
+
+![image-20230513130859760](img/Nginx学习笔记/image-20230513130859760.png)
+
+
+
+![image-20230513130911421](img/Nginx学习笔记/image-20230513130911421.png)
+
+
+
+
+
+配置nginx.conf
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+upstream testserver{
+        server 127.0.0.1:9091;
+        server 127.0.0.1:9092;
+        server 127.0.0.1:9093;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+        }
+}
+}
+```
+
+
+
+
+
+检查配置并启动
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ./nginx -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0> start ./nginx
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+访问
+
+![image-20230513131645698](img/Nginx学习笔记/image-20230513131645698.png)
+
+![image-20230513131654112](img/Nginx学习笔记/image-20230513131654112.png)
+
+![image-20230513131702156](img/Nginx学习笔记/image-20230513131702156.png)
+
+![image-20230513131710964](img/Nginx学习笔记/image-20230513131710964.png)
+
+
+
+![image-20230513131719646](img/Nginx学习笔记/image-20230513131719646.png)
+
+
+
+默认采用轮询的方式
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> curl http://localhost:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：f3e1f11b-2873-4167-bf04-ed93a75cb2a4<br>当前访问ip：127.0.0.1<br>访问计数：7
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Sat, 13 May 2023 05:17:58 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：f3e1f11b-2873-4167-bf04-ed93a75c...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8], [Date, Sat, 13 May 2023 05:17:5                     8 GMT]...}                                                                                                                  Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://localhost:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：4709e1eb-03aa-4b24-8f23-83b794d521d9<br>当前访问ip：127.0.0.1<br>访问计数：8
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Sat, 13 May 2023 05:18:22 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：4709e1eb-03aa-4b24-8f23-83b794d5...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8], [Date, Sat, 13 May 2023 05:18:2                     2 GMT]...}                                                                                                                  Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://localhost:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：088d7871-6657-4f4a-be89-636206d5a4a0<br>当前访问ip：127.0.0.1<br>访问计数：9
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Sat, 13 May 2023 05:18:24 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：088d7871-6657-4f4a-be89-636206d5...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8], [Date, Sat, 13 May 2023 05:18:2                     4 GMT]...}                                                                                                                  Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://localhost:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：f3e1f11b-2873-4167-bf04-ed93a75cb2a4<br>当前访问ip：127.0.0.1<br>访问计数：8
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Sat, 13 May 2023 05:18:26 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：f3e1f11b-2873-4167-bf04-ed93a75c...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8], [Date, Sat, 13 May 2023 05:18:2                     6 GMT]...}                                                                                                                  Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://localhost:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：4709e1eb-03aa-4b24-8f23-83b794d521d9<br>当前访问ip：127.0.0.1<br>访问计数：9
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Sat, 13 May 2023 05:18:28 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：4709e1eb-03aa-4b24-8f23-83b794d5...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8], [Date, Sat, 13 May 2023 05:18:2                     8 GMT]...}                                                                                                                  Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://localhost:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：088d7871-6657-4f4a-be89-636206d5a4a0<br>当前访问ip：127.0.0.1<br>访问计数：10
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    Content-Length: 104
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Sat, 13 May 2023 05:18:28 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：088d7871-6657-4f4a-be89-636206d5...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Content-Length, 104], [Content-Type, text/plain;charset=UTF-8], [Date, Sat, 13 May 2023 05:18:2                     8 GMT]...}                                                                                                                  Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 104
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://localhost:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：f3e1f11b-2873-4167-bf04-ed93a75cb2a4<br>当前访问ip：127.0.0.1<br>访问计数：9
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Sat, 13 May 2023 05:18:29 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：f3e1f11b-2873-4167-bf04-ed93a75c...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8], [Date, Sat, 13 May 2023 05:18:2
+                    9 GMT]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://localhost:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：4709e1eb-03aa-4b24-8f23-83b794d521d9<br>当前访问ip：127.0.0.1<br>访问计数：10
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    Content-Length: 104
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Sat, 13 May 2023 05:18:31 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：4709e1eb-03aa-4b24-8f23-83b794d5...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [Content-Length, 104], [Content-Type, text/plain;charset=UTF-8], [Date, Sat, 13 May 2023 05:18:3
+                    1 GMT]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 104
+
+
+
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+
+
+
+
+
+
+### 负载均衡状态
+
