@@ -7290,3 +7290,215 @@ PS C:\Users\mao>
 
 
 #### max_conns
+
+max_conns=number是用来设置代理服务器同时活动链接的最大数量，默认为0，表示不限制，使用该配置可以根据后端服务器处理请求的并发量来进行设置，防止后端服务器被压垮
+
+
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+upstream testserver{
+        server 127.0.0.1:9091 down;
+        server 127.0.0.1:9092 down;
+        server 127.0.0.1:9093 max_conns=1;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+        }
+}
+}
+```
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ./nginx -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0> ./nginx -s reload
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+使用jmeter测试
+
+![image-20230514133336142](img/Nginx学习笔记/image-20230514133336142.png)
+
+
+
+![image-20230514133401509](img/Nginx学习笔记/image-20230514133401509.png)
+
+
+
+![image-20230514133411975](img/Nginx学习笔记/image-20230514133411975.png)
+
+
+
+![image-20230514133437295](img/Nginx学习笔记/image-20230514133437295.png)
+
+
+
+![image-20230514133451743](img/Nginx学习笔记/image-20230514133451743.png)
+
+
+
+![image-20230514133604121](img/Nginx学习笔记/image-20230514133604121.png)
+
+
+
+启动测试
+
+![image-20230514133723109](img/Nginx学习笔记/image-20230514133723109.png)
+
+
+
+吞吐量18000左右，异常率98%，只有1.5%左右的请求是正常进入到后端服务器的。
+
+![image-20230514133857035](img/Nginx学习笔记/image-20230514133857035.png)
+
+
+
+![image-20230514133910575](img/Nginx学习笔记/image-20230514133910575.png)
+
+
+
+
+
+nginx日志如下：
+
+![image-20230514134028648](img/Nginx学习笔记/image-20230514134028648.png)
+
+
+
+```sh
+2023/05/14 13:36:25 [error] 8060#10672: *2992 no live upstreams while connecting to upstream, client: 127.0.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://testserver/", host: "localhost:8080"
+2023/05/14 13:36:25 [error] 8060#10672: *3027 no live upstreams while connecting to upstream, client: 127.0.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://testserver/", host: "localhost:8080"
+2023/05/14 13:36:25 [error] 8060#10672: *3040 no live upstreams while connecting to upstream, client: 127.0.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://testserver/", host: "localhost:8080"
+2023/05/14 13:36:25 [error] 8060#10672: *3078 no live upstreams while connecting to upstream, client: 127.0.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://testserver/", host: "localhost:8080"
+2023/05/14 13:36:25 [error] 8060#10672: *3155 no live upstreams while connecting to upstream, client: 127.0.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://testserver/", host: "localhost:8080"
+2023/05/14 13:36:25 [error] 8060#10672: *3128 no live upstreams while connecting to upstream, client: 127.0.0.1, server: localhost, request: "GET / HTTP/1.1", upstream: "http://testserver/", host: "localhost:8080"
+```
+
+
+
+
+
+
+
+再将max_conns更改到30
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+upstream testserver{
+        server 127.0.0.1:9091 down;
+        server 127.0.0.1:9092 down;
+        server 127.0.0.1:9093 max_conns=30;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+        }
+}
+}
+```
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ./nginx -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0> ./nginx -s reload
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+再次测试
+
+![image-20230514134814659](img/Nginx学习笔记/image-20230514134814659.png)
+
+
+
+将线程数更改成60
+
+![image-20230514135040620](img/Nginx学习笔记/image-20230514135040620.png)
+
+
+
+测试结果异常率为61%，期望值为50%左右
+
+![image-20230514135053140](img/Nginx学习笔记/image-20230514135053140.png)
+
+
+
+
+
+
+
+
+
+#### max_fails
+
