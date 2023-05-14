@@ -7502,3 +7502,136 @@ PS D:\opensoft\nginx-1.24.0>
 
 #### max_fails
 
+max_fails=number设置允许请求代理服务器失败的次数，默认为1
+
+
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+upstream testserver{
+        server 127.0.0.1:9091 down;
+        server 127.0.0.1:9092 down;
+        server 127.0.0.1:9093 max_conns=30 max_fails=3;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+        }
+}
+}
+```
+
+
+
+
+
+#### fail_timeout
+
+fail_timeout=time设置经过max_fails失败后，服务暂停的时间，默认是10秒
+
+
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+upstream testserver{
+        server 127.0.0.1:9091 down;
+        server 127.0.0.1:9092 down;
+        server 127.0.0.1:9093 max_conns=30 max_fails=3 fail_timeout=30;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+        }
+}
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+### 负载均衡策略
+
+Nginx的upstream支持如下六种方式的分配算法：
+
+|  算法名称  |       说明       |
+| :--------: | :--------------: |
+|    轮询    |     默认方式     |
+|   weight   |     权重方式     |
+|  ip_hash   |  依据ip分配方式  |
+| least_conn | 依据最少连接方式 |
+|  url_hash  | 依据URL分配方式  |
+|    fair    | 依据响应时间方式 |
+
+
+
+
+
+#### 轮询
+
