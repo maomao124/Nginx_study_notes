@@ -8343,3 +8343,222 @@ PS D:\opensoft\nginx-1.24.0>
 
 #### least_conn
 
+最少连接，把请求转发给连接数较少的后端服务器。轮询算法是把请求平均的转发给各个后端，使它们的负载大致相同；但是，有些请求占用的时间很长，会导致其所在的后端负载较高。这种情况下，least_conn这种方式就可以达到更好的负载均衡效果
+
+此负载均衡策略适合请求处理时间长短不一造成服务器过载的情况
+
+
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+upstream testserver{
+        least_conn;
+        server 127.0.0.1:9091;
+        server 127.0.0.1:9092;
+        server 127.0.0.1:9093;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+        }
+}
+}
+```
+
+
+
+
+
+
+
+#### url_hash
+
+按访问url的hash结果来分配请求，使每个url定向到同一个后端服务器，要配合缓存命中来使用。同一个资源多次请求，可能会到达不同的服务器上，导致不必要的多次下载，缓存命中率不高，以及一些资源时间的浪费。而使用url_hash，可以使得同一个url（也就是同一个资源请求）会到达同一台服务器，一旦缓存住了资源，再此收到请求，就可以从缓存中读取。
+
+
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+upstream testserver{
+        url_hash;
+        server 127.0.0.1:9091;
+        server 127.0.0.1:9092;
+        server 127.0.0.1:9093;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+        }
+}
+}
+```
+
+
+
+
+
+#### fair
+
+fair采用的不是内建负载均衡使用的轮换的均衡算法，而是可以根据页面大小、加载时间长短智能的进行负载均衡
+
+fair属于第三方模块实现的负载均衡。需要添加`nginx-upstream-fair`模块
+
+
+
+1. 下载nginx-upstream-fair模块
+
+```
+下载地址为:
+	https://github.com/gnosek/nginx-upstream-fair
+```
+
+2. 将下载的文件上传到服务器并进行解压缩
+
+```
+unzip nginx-upstream-fair-master.zip
+```
+
+3. 重命名资源
+
+```
+mv nginx-upstream-fair-master fair
+```
+
+4. 使用./configure命令将资源添加到Nginx模块中
+
+```
+./configure --add-module=/root/fair
+```
+
+5. 编译
+
+```
+make
+```
+
+6. 更新Nginx
+7. 编译测试使用Nginx
+
+
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+upstream testserver{
+        fair;
+        server 127.0.0.1:9091;
+        server 127.0.0.1:9092;
+        server 127.0.0.1:9093;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+        }
+}
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Nginx四层负载均衡
