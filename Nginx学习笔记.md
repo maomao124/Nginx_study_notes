@@ -8681,3 +8681,160 @@ stream {
 
 ## Nginx的web缓存
 
+Nginx是从0.7.48版开始提供缓存功能。Nginx是基于Proxy Store来实现的，其原理是把URL及相关组合当做Key,在使用MD5算法对Key进行哈希，得到硬盘上对应的哈希目录路径，从而将缓存内容保存在该目录中。它可以支持任意URL连接，同时也支持404/301/302这样的非200状态码。Nginx即可以支持对指定URL或者状态码设置过期时间，也可以使用purge命令来手动清除指定URL的缓存。
+
+
+
+
+
+## 相关指令
+
+Nginx的web缓存服务主要是使用`ngx_http_proxy_module`模块相关指令集来完成
+
+
+
+
+
+### proxy_cache_path指令
+
+该指定用于设置缓存文件的存放路径
+
+
+
+| 默认值 |                              —                               |
+| :----: | :----------------------------------------------------------: |
+|  语法  | proxy_cache_path path [levels=number] <br/>keys_zone=zone_name:zone_size [inactive=time]\[max_size=size]; |
+|  位置  |                             http                             |
+
+
+
+* path：缓存路径地址
+* levels:：指定该缓存空间对应的目录，最多可以设置3层，每层取值为1|2
+* keys_zone：用来为这个缓存区设置名称和指定大小
+* inactive：指定缓存的数据多次时间未被访问就将被删除
+* max_size：设置最大缓存空间，如果缓存空间存满，默认会覆盖缓存时间最长的资源
+
+
+
+使用示例：
+
+```sh
+http{
+	proxy_cache_path /usr/local/proxy_cache keys_zone=itcast:200m  levels=1:2:1 inactive=1d max_size=20g;
+}
+```
+
+
+
+
+
+
+
+### proxy_cache指令
+
+该指令用来开启或关闭代理缓存，如果是开启则自定使用哪个缓存区来进行缓存
+
+
+
+|  语法  | proxy_cache zone_name\|off; |
+| :----: | :-------------------------: |
+| 默认值 |      proxy_cache off;       |
+|  位置  |   http、server、location    |
+
+
+
+* zone_name：指定使用缓存区的名称
+
+
+
+
+
+
+
+### proxy_cache_key指令
+
+该指令用来设置web缓存的key值，Nginx会根据key值MD5哈希存缓存
+
+
+
+|  语法  |               proxy_cache_key key;                |
+| :----: | :-----------------------------------------------: |
+| 默认值 | proxy_cache_key \$scheme\$proxy_host$request_uri; |
+|  位置  |              http、server、location               |
+
+
+
+
+
+### proxy_cache_valid指令
+
+该指令用来对不同返回状态码的URL设置不同的缓存时间
+
+
+
+|  语法  | proxy_cache_valid [code ...] time; |
+| :----: | :--------------------------------: |
+| 默认值 |                 —                  |
+|  位置  |       http、server、location       |
+
+
+
+
+为200和302的响应URL设置10分钟缓存，为404的响应URL设置1分钟缓存：
+
+```sh
+proxy_cache_valid 200 302 10m;
+proxy_cache_valid 404 1m;
+```
+
+
+
+
+对所有响应状态码的URL都设置1分钟缓存：
+
+```sh
+proxy_cache_valid any 1m;
+```
+
+
+
+
+
+### proxy_cache_min_uses指令
+
+该指令用来设置资源被访问多少次后被缓存
+
+
+
+|  语法  | proxy_cache_min_uses number; |
+| :----: | :--------------------------: |
+| 默认值 |   proxy_cache_min_uses 1;    |
+|  位置  |    http、server、location    |
+
+
+
+
+
+### proxy_cache_methods指令
+
+该指令用户设置缓存哪些HTTP方法
+
+默认缓存HTTP的GET和HEAD方法，不缓存POST方法
+
+
+
+|  语法  | proxy_cache_methods GET\|HEAD\|POST; |
+| :----: | :----------------------------------: |
+| 默认值 |    proxy_cache_methods GET HEAD;     |
+|  位置  |        http、server、location        |
+
+
+
+
+
+
+
+
+
+
+
