@@ -8834,7 +8834,454 @@ proxy_cache_valid any 1m;
 
 
 
+## 实现
+
+启动刚才的后端服务
+
+```sh
+java -jar nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar --server.port=9091
+```
 
 
 
+配置文件：
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     proxy_cache_path ./cache levels=2:1 keys_zone=test:200m inactive=1d max_size=10g;
+     
+upstream testserver{
+        server 127.0.0.1:9091;
+}
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location / {
+                proxy_pass http://testserver;
+                proxy_cache test;
+                proxy_cache_min_uses 3;
+                proxy_cache_valid 200 5d;
+                proxy_cache_valid 404 30s;
+                proxy_cache_valid any 1m;
+                add_header nginx-cache "$upstream_cache_status";
+        }
+}
+}
+```
+
+
+
+启动
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ./nginx -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0> start ./nginx
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+访问：
+
+```sh
+PS D:\opensoft\nginx-1.24.0> curl http://127.0.0.1:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：181b9ee6-1161-4ebb-bc33-fb93d3cfd541<br>当前访问ip：127.0.0.1<br>访问计数：1
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    nginx-cache: MISS
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Wed, 17 May 2023 06:24:39 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：181b9ee6-1161...
+Forms             : {}                                                                                                                          Headers           : {[Connection, keep-alive], [nginx-cache, MISS], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8]...}         Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://127.0.0.1:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：181b9ee6-1161-4ebb-bc33-fb93d3cfd541<br>当前访问ip：127.0.0.1<br>访问计数：2
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    nginx-cache: MISS
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Wed, 17 May 2023 06:24:42 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：181b9ee6-1161...
+Forms             : {}                                                                                                                          Headers           : {[Connection, keep-alive], [nginx-cache, MISS], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8]...}         Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://127.0.0.1:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：181b9ee6-1161-4ebb-bc33-fb93d3cfd541<br>当前访问ip：127.0.0.1<br>访问计数：3
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    nginx-cache: MISS
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Wed, 17 May 2023 06:24:43 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：181b9ee6-1161...
+Forms             : {}                                                                                                                          Headers           : {[Connection, keep-alive], [nginx-cache, MISS], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8]...}         Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://127.0.0.1:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：181b9ee6-1161-4ebb-bc33-fb93d3cfd541<br>当前访问ip：127.0.0.1<br>访问计数：3
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    nginx-cache: HIT
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Wed, 17 May 2023 06:24:44 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：181b9ee6-1161-...
+Forms             : {}                                                                                                                          Headers           : {[Connection, keep-alive], [nginx-cache, HIT], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8]...}          Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://127.0.0.1:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：181b9ee6-1161-4ebb-bc33-fb93d3cfd541<br>当前访问ip：127.0.0.1<br>访问计数：3
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    nginx-cache: HIT
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Wed, 17 May 2023 06:24:45 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：181b9ee6-1161-...
+Forms             : {}                                                                                                                          Headers           : {[Connection, keep-alive], [nginx-cache, HIT], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8]...}          Images            : {}                                                                                                                          InputFields       : {}                                                                                                                          Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://127.0.0.1:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：181b9ee6-1161-4ebb-bc33-fb93d3cfd541<br>当前访问ip：127.0.0.1<br>访问计数：3
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    nginx-cache: HIT
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Wed, 17 May 2023 06:24:45 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：181b9ee6-1161-...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [nginx-cache, HIT], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0> curl http://127.0.0.1:8080/
+
+
+StatusCode        : 200
+StatusDescription :
+Content           : 当前机器id：181b9ee6-1161-4ebb-bc33-fb93d3cfd541<br>当前访问ip：127.0.0.1<br>访问计数：3
+RawContent        : HTTP/1.1 200
+                    Connection: keep-alive
+                    nginx-cache: HIT
+                    Content-Length: 103
+                    Content-Type: text/plain;charset=UTF-8
+                    Date: Wed, 17 May 2023 06:24:46 GMT
+                    Server: nginx/1.24.0
+
+                    当前机器id：181b9ee6-1161-...
+Forms             : {}
+Headers           : {[Connection, keep-alive], [nginx-cache, HIT], [Content-Length, 103], [Content-Type, text/plain;charset=UTF-8]...}
+Images            : {}
+InputFields       : {}
+Links             : {}
+ParsedHtml        : mshtml.HTMLDocumentClass
+RawContentLength  : 103
+
+
+
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+服务器日志：
+
+```sh
+2023-05-17 14:24:39.480  INFO 28612 --- [nio-9091-exec-1] m.n.controller.TestController            : 127.0.0.1访问当前实例,访问计数：1
+2023-05-17 14:24:42.561  INFO 28612 --- [nio-9091-exec-2] m.n.controller.TestController            : 127.0.0.1访问当前实例,访问计数：2
+2023-05-17 14:24:43.537  INFO 28612 --- [nio-9091-exec-3] m.n.controller.TestController            : 127.0.0.1访问当前实例,访问计数：3
+```
+
+
+
+当访问3次后，nginx将数据缓存，之后的访问直接从缓存里读取，访问计数不再增加
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/5/17     14:24                cache
+d-----         2023/5/12     14:54                conf
+d-----         2023/4/11     23:31                contrib
+d-----         2023/4/11     23:31                docs
+d-----          2023/5/3     14:45                html
+d-----         2023/5/12     14:54                key
+d-----         2023/5/17     14:23                logs
+d-----         2023/4/29     13:29                temp
+-a----         2023/4/11     23:29        3811328 nginx.exe
+
+
+PS D:\opensoft\nginx-1.24.0> cd .\cache\
+PS D:\opensoft\nginx-1.24.0\cache> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\cache
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/5/17     14:24                96
+
+
+PS D:\opensoft\nginx-1.24.0\cache> cd .\96\
+PS D:\opensoft\nginx-1.24.0\cache\96> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\cache\96
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/5/17     14:24                a
+
+
+PS D:\opensoft\nginx-1.24.0\cache\96> cd .\a\
+PS D:\opensoft\nginx-1.24.0\cache\96\a> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\cache\96\a
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         2023/5/17     14:24            598 b5268943f8305b7b1216f7b0efe65a96
+
+
+PS D:\opensoft\nginx-1.24.0\cache\96\a> cat .\b5268943f8305b7b1216f7b0efe65a96
+?kd+sdd悩F"i?
+KEY: http://testserver/
+HTTP/1.1 200
+Content-Type: text/plain;charset=UTF-8
+Content-Length: 103
+Date: Wed, 17 May 2023 06:24:42 GMT
+Connection: close
+
+褰撳墠鏈哄櫒id锛?81b9ee6-1161-4ebb-bc33-fb93d3cfd541<br>褰撳墠璁块棶ip锛?27.0.0.1<br>璁块棶璁℃暟锛?
+PS D:\opensoft\nginx-1.24.0\cache\96\a>
+```
+
+
+
+nginx缓存目录生成了文件
+
+
+
+
+
+
+
+
+
+## Nginx缓存的清除
+
+可以使用ngx_cache_purge模块来实现
+
+
+
+### 添加模块
+
+（1）下载ngx_cache_purge模块对应的资源包，并上传到服务器上。
+
+```
+ngx_cache_purge-2.3.tar.gz
+```
+
+
+
+（2）对资源文件进行解压缩
+
+```
+tar -zxf ngx_cache_purge-2.3.tar.gz
+```
+
+
+
+（3）修改文件夹名称，方便后期配置
+
+```
+mv ngx_cache_purge-2.3 purge
+```
+
+
+
+（4）查询Nginx的配置参数
+
+```
+nginx -V
+```
+
+
+
+（5）进入Nginx的安装目录，使用./configure进行参数配置
+
+```
+./configure --add-module=/root/nginx/module/purge
+```
+
+
+
+（6）使用make进行编译
+
+```
+make
+```
+
+
+
+（7）将nginx安装目录的nginx二级制可执行文件备份
+
+```
+mv /usr/local/nginx/sbin/nginx /usr/local/nginx/sbin/nginxold
+```
+
+
+
+（8）将编译后的objs中的nginx拷贝到nginx的sbin目录下
+
+```
+cp objs/nginx /usr/local/nginx/sbin
+```
+
+
+
+（9）使用make进行升级
+
+```
+make upgrade
+```
+
+
+
+
+
+
+
+### ngx_cache_purge指令
+
+
+
+|  语法  | ngx_cache_purge zone_name key; |
+| :----: | :----------------------------: |
+| 默认值 |               -                |
+|  位置  |            location            |
+
+
+
+使用示例：
+
+```sh
+server{
+	location ~/purge(/.*) {
+		proxy_cache_purge test test1;
+	}
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+## Nginx设置资源不缓存
 
