@@ -9285,3 +9285,82 @@ server{
 
 ## Nginx设置资源不缓存
 
+### 概述
+
+不是所有的数据都适合进行缓存。比如说对于一些经常发生变化的数据。如果进行缓存的话，就很容易出现用户访问到的数据不是服务器真实的数据。所以对于这些资源我们在缓存的过程中就需要进行过滤，不进行缓存
+
+
+
+
+
+### 相关指令
+
+#### proxy_no_cache指令
+
+该指令是用来定义不将数据进行缓存的条件
+
+
+
+|  语法  | proxy_no_cache string ...; |
+| :----: | :------------------------: |
+| 默认值 |             —              |
+|  位置  |   http、server、location   |
+
+
+
+示例：
+
+```sh
+proxy_no_cache $cookie_nocache $arg_nocache $arg_comment;
+```
+
+
+
+* $cookie_nocache：当前请求的cookie中键的名称为nocache对应的值
+* $arg_nocache：当前请求的参数中属性名为nocache对应的属性值
+* $arg_comment：当前请求的参数中属性名comment对应的属性值
+
+
+
+多个条件中至少有一个不为空且不等于"0"，则条件满足成立
+
+
+
+
+
+#### proxy_cache_bypass指令
+
+该指令是用来设置不从缓存中获取数据的条件
+
+
+
+|  语法  | proxy_cache_bypass string ...; |
+| :----: | :----------------------------: |
+| 默认值 |               —                |
+|  位置  |     http、server、location     |
+
+
+
+```sh
+proxy_cache_bypass $cookie_nocache $arg_nocache $arg_comment;
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Nginx制作下载站点
