@@ -9364,3 +9364,530 @@ proxy_cache_bypass $cookie_nocache $arg_nocache $arg_comment;
 
 
 # Nginx制作下载站点
+
+## 概述
+
+nginx下载站点示例：http://nginx.org/download/
+
+![image-20230518140335077](img/Nginx学习笔记/image-20230518140335077.png)
+
+
+
+下载站点是用来提供用户来下载相关资源的网站
+
+
+
+nginx使用的是模块ngx_http_autoindex_module来实现的，该模块处理以斜杠("/")结尾的请求，并生成目录列表
+
+
+
+
+
+## 相关指令
+
+### autoindex指令
+
+启用或禁用目录列表输出
+
+
+
+|  语法  |   autoindex on\|off;   |
+| :----: | :--------------------: |
+| 默认值 |     autoindex off;     |
+|  位置  | http、server、location |
+
+
+
+
+
+### autoindex_exact_size指令
+
+对应HTLM格式，指定是否在目录列表展示文件的详细大小
+
+
+
+|  语法  | autoindex_exact_size  on\|off; |
+| :----: | :----------------------------: |
+| 默认值 |   autoindex_exact_size  on;    |
+|  位置  |     http、server、location     |
+
+
+
+* on：显示出文件的确切大小，单位是bytes
+* off：显示出文件的大概大小，单位是kB或者MB或者GB
+
+
+
+
+
+### autoindex_format指令
+
+设置目录列表的格式，该指令在1.7.9及以后版本中出现
+
+
+
+|  语法  | autoindex_format html\|xml\|json\|jsonp; |
+| :----: | :--------------------------------------: |
+| 默认值 |          autoindex_format html;          |
+|  位置  |          http、server、location          |
+
+
+
+
+
+### autoindex_localtime指令
+
+对应HTML格式，是否在目录列表上显示时间
+
+
+
+|  语法  | autoindex_localtime on \| off; |
+| :----: | :----------------------------: |
+| 默认值 |    autoindex_localtime off;    |
+|  位置  |     http、server、location     |
+
+
+
+* off：显示的文件时间为GMT时间
+* on：显示的文件时间为文件的服务器时间
+
+
+
+
+
+
+
+
+
+## 实现
+
+随便准备几个文件，放入nginx的file目录下
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----         2023/5/17     14:24                cache
+d-----         2023/5/12     14:54                conf
+d-----         2023/4/11     23:31                contrib
+d-----         2023/4/11     23:31                docs
+d-----         2023/5/18     14:11                file
+d-----          2023/5/3     14:45                html
+d-----         2023/5/12     14:54                key
+d-----         2023/5/17     14:23                logs
+d-----         2023/4/29     13:29                temp
+-a----         2023/4/11     23:29        3811328 nginx.exe
+
+
+PS D:\opensoft\nginx-1.24.0> cd .\file\
+PS D:\opensoft\nginx-1.24.0\file> ls
+
+
+    目录: D:\opensoft\nginx-1.24.0\file
+
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         2023/5/10     13:46             22 application.yml
+-a----         2023/5/10     14:01       17620762 nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar
+-a----         2023/5/10     14:16           7701 readme.md
+
+
+PS D:\opensoft\nginx-1.24.0\file>
+```
+
+
+
+修改配置文件：
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location /download{
+            alias ./file;
+            autoindex on;
+            autoindex_exact_size on;
+            autoindex_format html;
+            autoindex_localtime on;
+         }
+   }
+}
+```
+
+
+
+
+
+校验并启动
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ./nginx -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0> start ./nginx
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+访问
+
+http://localhost:8080/download/
+
+
+
+![image-20230518142759949](img/Nginx学习笔记/image-20230518142759949.png)
+
+
+
+点击下载
+
+![image-20230518142821816](img/Nginx学习笔记/image-20230518142821816.png)
+
+
+
+
+
+更改配置文件，autoindex_exact_size改成off
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location /download{
+            alias ./file;
+            autoindex on;
+            autoindex_exact_size off;
+            autoindex_format html;
+            autoindex_localtime on;
+         }
+   }
+}
+```
+
+
+
+```sh
+PS D:\opensoft\nginx-1.24.0> ./nginx -t
+nginx: the configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf syntax is ok
+nginx: configuration file D:\opensoft\nginx-1.24.0/conf/nginx.conf test is successful
+PS D:\opensoft\nginx-1.24.0> ./nginx -s reload
+PS D:\opensoft\nginx-1.24.0>
+```
+
+
+
+再次访问
+
+![image-20230518143035148](img/Nginx学习笔记/image-20230518143035148.png)
+
+
+
+更改配置文件，autoindex_localtime改成off
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location /download{
+            alias ./file;
+            autoindex on;
+            autoindex_exact_size off;
+            autoindex_format html;
+            autoindex_localtime off;
+         }
+   }
+}
+```
+
+
+
+
+
+重新加载并访问
+
+![image-20230518143215516](img/Nginx学习笔记/image-20230518143215516.png)
+
+```sh
+../
+application.yml                                    10-May-2023 13:46                  22
+nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar        10-May-2023 14:01            17620762
+readme.md                                          10-May-2023 14:16                7701
+```
+
+
+
+```html
+<html>
+<head><title>Index of /download/</title></head>
+<body>
+<h1>Index of /download/</h1><hr><pre><a href="../">../</a>
+<a href="application.yml">application.yml</a>                                    10-May-2023 13:46                  22
+<a href="nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar">nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar</a>        10-May-2023 14:01            17620762
+<a href="readme.md">readme.md</a>                                          10-May-2023 14:16                7701
+</pre><hr></body>
+</html>
+```
+
+
+
+
+
+
+
+
+
+更改配置文件，更改autoindex_format为xml格式
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location /download{
+            alias ./file;
+            autoindex on;
+            autoindex_exact_size on;
+            autoindex_format xml;
+            autoindex_localtime on;
+         }
+   }
+}
+```
+
+
+
+
+
+重新加载并访问
+
+![image-20230518143422839](img/Nginx学习笔记/image-20230518143422839.png)
+
+
+
+```xml
+<list>
+   <file mtime="2023-05-10T05:46:49Z" size="22">application.yml</file>
+   <file mtime="2023-05-10T06:01:21Z" size="17620762">nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar</file>
+   <file mtime="2023-05-10T06:16:16Z" size="7701">readme.md</file>
+</list>
+```
+
+
+
+
+
+更改配置文件，更改autoindex_format为json格式
+
+```sh
+#配置运行Nginx进程生成的worker进程数
+worker_processes 2;
+#配置Nginx服务器运行对错误日志存放的路径
+error_log ./logs/error.log;
+#配置Nginx服务器允许时记录Nginx的master进程的PID文件路径和名称
+pid ./logs/nginx.pid;
+#配置Nginx服务是否以守护进程方法启动
+#daemon on;
+
+
+
+events{
+	#设置Nginx网络连接序列化
+	accept_mutex on;
+	#设置Nginx的worker进程是否可以同时接收多个请求
+	multi_accept on;
+	#设置Nginx的worker进程最大的连接数
+	worker_connections 1024;
+	#设置Nginx使用的事件驱动模型
+	#use epoll;
+}
+
+
+http{
+	#定义MIME-Type
+	include mime.types;
+	default_type application/octet-stream;
+     
+
+server {
+        listen          8080;
+        server_name     localhost;
+        location /download{
+            alias ./file;
+            autoindex on;
+            autoindex_exact_size on;
+            autoindex_format json;
+            autoindex_localtime on;
+         }
+   }
+}
+```
+
+
+
+
+
+重新加载并访问
+
+![image-20230518143558030](img/Nginx学习笔记/image-20230518143558030.png)
+
+
+
+```json
+[
+    {
+        "name": "application.yml",
+        "type": "file",
+        "mtime": "Wed, 10 May 2023 05:46:49 GMT",
+        "size": 22
+    },
+    {
+        "name": "nginx-reverse-proxy-demo-0.0.1-SNAPSHOT.jar",
+        "type": "file",
+        "mtime": "Wed, 10 May 2023 06:01:21 GMT",
+        "size": 17620762
+    },
+    {
+        "name": "readme.md",
+        "type": "file",
+        "mtime": "Wed, 10 May 2023 06:16:16 GMT",
+        "size": 7701
+    }
+]
+```
+
+
+
+
+
+
+
+
+
+
+
+# Nginx实现动静分离
+
