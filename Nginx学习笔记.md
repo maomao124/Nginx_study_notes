@@ -10382,3 +10382,216 @@ http://localhost:8080/index.html
 
 # Nginx高可用解决方案
 
+## 概述
+
+一台服务器宕机，还有其他两台对外提供服务，同时也可以实现后台服务器的不间断更新。如果是Nginx宕机了呢，那么整套系统都将服务对外提供服务了，这个如何解决？
+
+![image-20230520124835763](img/Nginx学习笔记/image-20230520124835763.png)
+
+
+
+需要两台以上的Nginx服务器对外提供服务，这样的话就可以解决其中一台宕机了，另外一台还能对外提供服务，但是如果是两台Nginx服务器的话，会有两个IP地址，用户该访问哪台服务器，用户怎么知道哪台是好的，哪台是宕机了的?
+
+
+
+可以使用Keepalived来解决，Keepalived 软件由 C 编写的，最初是专为 LVS 负载均衡软件设计的，Keepalived 软件主要是通过 VRRP 协议实现高可用功能。
+
+
+
+
+
+## VRRP介绍
+
+VRRP（Virtual Route Redundancy Protocol）协议，翻译过来为虚拟路由冗余协议。VRRP协议将两台或多台路由器设备虚拟成一个设备，对外提供虚拟路由器IP,而在路由器组内部，如果实际拥有这个对外IP的路由器如果工作正常的话就是MASTER,MASTER实现针对虚拟路由器IP的各种网络功能。其他设备不拥有该虚拟IP，状态为BACKUP,处了接收MASTER的VRRP状态通告信息以外，不执行对外的网络功能。当主机失效时，BACKUP将接管原先MASTER的网络功能。
+
+
+
+![image-20230520125048289](img/Nginx学习笔记/image-20230520125048289.png)
+
+
+
+VRRP可以把一个虚拟路由器的责任动态分配到局域网上的 VRRP 路由器中的一台。其中的虚拟路由即Virtual路由是由VRRP路由群组创建的一个不真实存在的路由，这个虚拟路由也是有对应的IP地址。而且VRRP路由1和VRRP路由2之间会有竞争选择，通过选择会产生一个Master路由和一个Backup路由。
+
+Master路由和Backup路由之间会有一个心跳检测，Master会定时告知Backup自己的状态，如果在指定的时间内，Backup没有接收到这个通知内容，Backup就会替代Master成为新的Master。Master路由有一个特权就是虚拟路由和后端服务器都是通过Master进行数据传递交互的，而备份节点则会直接丢弃这些请求和数据，不做处理，只是去监听Master的状态。
+
+
+
+
+
+## Keepalived
+
+解决方案如下：
+
+![image-20230520125404450](img/Nginx学习笔记/image-20230520125404450.png)
+
+
+
+
+
+### 环境搭建
+
+|       VIP       |       IP        |   主机名    | 主/从  |
+| :-------------: | :-------------: | :---------: | :----: |
+|                 | 192.168.200.133 | keepalived1 | Master |
+| 192.168.200.222 |                 |             |        |
+|                 | 192.168.200.122 | keepalived2 | Backup |
+
+
+
+
+
+### keepalived的安装
+
+1. 从官方网站下载keepalived,官网地址https://keepalived.org/
+2. 将下载的资源上传到服务器
+3. 创建keepalived目录，方便管理资源
+4. 将压缩文件进行解压缩，解压缩到指定的目录
+5. 对keepalived进行配置，编译和安装：`./configure --sysconf=/etc --prefix=/usr/local` 和`make && make install`命令
+
+
+
+/usr/local/sbin目录下的`keepalived`,是系统配置脚本，用来启动和关闭keepalived
+
+`/etc/keepalived/keepalived.conf`：keepalived的系统配置文件
+
+
+
+
+
+### Keepalived配置文件
+
+打开keepalived.conf配置文件
+
+这里面会分三部，第一部分是global全局配置、第二部分是vrrp相关配置、第三部分是LVS相关配置。
+
+
+
+```sh
+global全局部分：
+global_defs {
+   #通知邮件，当keepalived发送切换时需要发email给具体的邮箱地址
+   notification_email {
+     12345@qq.com
+   }
+   #设置发件人的邮箱信息
+   notification_email_from 12345@qq.com
+   #指定smpt服务地址
+   smtp_server 192.168.200.1
+   #指定smpt服务连接超时时间
+   smtp_connect_timeout 30
+   #运行keepalived服务器的一个标识，可以用作发送邮件的主题信息
+   router_id LVS_DEVEL
+   
+   #默认是不跳过检查。检查收到的VRRP通告中的所有地址可能会比较耗时，设置此命令的意思是，如果通告与接收的上一个通告来自相同的master路由器，则不执行检查(跳过检查)
+   vrrp_skip_check_adv_addr
+   #严格遵守VRRP协议。
+   vrrp_strict
+   #在一个接口发送的两个免费ARP之间的延迟。可以精确到毫秒级。默认是0
+   vrrp_garp_interval 0
+   #在一个网卡上每组na消息之间的延迟时间，默认为0
+   vrrp_gna_interval 0
+}
+```
+
+```sh
+VRRP部分，该部分可以包含以下四个子模块
+1. vrrp_script
+2. vrrp_sync_group
+3. garp_group
+4. vrrp_instance
+我们会用到第一个和第四个，
+#设置keepalived实例的相关信息，VI_1为VRRP实例名称
+vrrp_instance VI_1 {
+    state MASTER  		#有两个值可选MASTER主 BACKUP备
+    interface ens33		#vrrp实例绑定的接口，用于发送VRRP包[当前服务器使用的网卡名称]
+    virtual_router_id 51#指定VRRP实例ID，范围是0-255
+    priority 100		#指定优先级，优先级高的将成为MASTER
+    advert_int 1		#指定发送VRRP通告的间隔，单位是秒
+    authentication {	#vrrp之间通信的认证信息
+        auth_type PASS	#指定认证方式。PASS简单密码认证(推荐)
+        auth_pass 1111	#指定认证使用的密码，最多8位
+    }
+    virtual_ipaddress { #虚拟IP地址设置虚拟IP地址，供用户访问使用，可设置多个，一行一个
+        192.168.200.222
+    }
+}
+```
+
+
+
+服务器1的配置：
+
+```sh
+global_defs {
+   notification_email {
+        12345@qq.com
+   }
+   notification_email_from 12345@qq.com
+   smtp_server 192.168.200.1
+   smtp_connect_timeout 30
+   router_id keepalived1
+   vrrp_skip_check_adv_addr
+   vrrp_strict
+   vrrp_garp_interval 0
+   vrrp_gna_interval 0
+}
+
+vrrp_instance VI_1 {
+    state MASTER
+    interface ens33
+    virtual_router_id 51
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        192.168.200.222
+    }
+}
+```
+
+
+
+服务器2的配置：
+
+```sh
+! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+        12345@qq.com
+   }
+   notification_email_from 12345@qq.com
+   smtp_server 192.168.200.1
+   smtp_connect_timeout 30
+   router_id keepalived2
+   vrrp_skip_check_adv_addr
+   vrrp_strict
+   vrrp_garp_interval 0
+   vrrp_gna_interval 0
+}
+
+vrrp_instance VI_1 {
+    state BACKUP
+    interface ens33
+    virtual_router_id 51
+    priority 90
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        192.168.200.222
+    }
+}
+```
+
+
+
+
+
+
+
