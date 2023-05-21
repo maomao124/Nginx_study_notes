@@ -10426,6 +10426,8 @@ Master路由和Backup路由之间会有一个心跳检测，Master会定时告�
 
 
 
+虚拟IP(VIP)会在MASTER节点上，当MASTER节点上的keepalived出问题以后，因为BACKUP无法收到MASTER发出的VRRP状态通过信息，就会直接升为MASTER。VIP也会"漂移"到新的MASTER。
+
 
 
 ### 环境搭建
@@ -10595,3 +10597,96 @@ vrrp_instance VI_1 {
 
 
 
+### vrrp_script
+
+keepalived只能做到对网络故障和keepalived本身的监控，即当出现网络故障或者keepalived本身出现问题时，进行切换。但是这些还不够，我们还需要监控keepalived所在服务器上的其他业务，比如Nginx,如果Nginx出现异常了，仅仅keepalived保持正常，是无法完成系统的正常工作的，因此需要根据业务进程的运行状态决定是否需要进行主备切换，这个时候，我们可以通过编写脚本对业务进程进行检测监控。
+
+
+
+在keepalived配置文件中添加对应的配置
+
+```sh
+vrrp_script 脚本名称
+{
+    script "脚本位置"
+    interval 3 #执行时间间隔
+    weight -20 #动态调整vrrp_instance的优先级
+}
+```
+
+
+
+
+
+编写脚本ck_nginx.sh
+
+```sh
+#!/bin/bash
+num=`ps -C nginx --no-header | wc -l`
+if [ $num -eq 0 ];then
+ /usr/local/nginx/sbin/nginx
+ sleep 2
+ if [ `ps -C nginx --no-header | wc -l` -eq 0 ]; then
+  killall keepalived
+ fi
+fi
+```
+
+
+
+* Linux ps命令用于显示当前进程 (process) 的状态。
+* -C(command) :指定命令的所有进程
+* --no-header 排除标题
+
+
+
+为脚本文件设置权限
+
+```sh
+chmod 755 ck_nginx.sh
+```
+
+
+
+
+
+将脚本添加到
+
+```sh
+vrrp_script ck_nginx {
+   script "/etc/keepalived/ck_nginx.sh" #执行脚本的位置
+   interval 2		#执行脚本的周期，秒为单位
+   weight -20		#权重的计算方式
+}
+vrrp_instance VI_1 {
+    state MASTER
+    interface ens33
+    virtual_router_id 10
+    priority 100
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        192.168.200.111
+    }
+    track_script {
+      ck_nginx
+    }
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Nginx的扩展模块
