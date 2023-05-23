@@ -10860,3 +10860,253 @@ Lua 5.4.2  Copyright (C) 1994-2020 Lua.org, PUC-Rio
 
 ### 语法
 
+#### HELLOWORLD
+
+```sh
+print("Hello World!!")
+```
+
+
+
+Lua交互式编程模式可以通过命令：
+
+```sh
+PS C:\Users\mao\Desktop> lua
+Lua 5.4.2  Copyright (C) 1994-2020 Lua.org, PUC-Rio
+> print("hello world")
+hello world
+>
+```
+
+
+
+脚本式：
+
+编写hello.lua
+
+```sh
+print("Hello World!!")
+```
+
+
+
+运行命令：
+
+```sh
+lua hello.lua
+```
+
+
+
+```sh
+PS C:\Users\mao\Desktop> cat .\hello.lua
+print("Hello World!!")
+PS C:\Users\mao\Desktop> lua hello.lua
+Hello World!!
+PS C:\Users\mao\Desktop>
+```
+
+
+
+如果想在交互式中运行脚本式的hello.lua中的内容，我们可以使用一个dofile函数：
+
+```sh
+dofile("./hello.lua")
+```
+
+```sh
+> dofile("./hello.lua")
+Hello World!!
+>
+```
+
+
+
+在Lua语言中，连续语句之间的分隔符并不是必须的，也就是说后面可以不需要加分号
+
+
+
+
+
+
+
+#### 注释
+
+关于Lua的注释要分两种，第一种是单行注释，第二种是多行注释
+
+
+
+单行注释的语法为：
+
+```
+--注释内容
+```
+
+
+
+多行注释的语法为:
+
+```
+--[[
+	注释内容
+	注释内容
+--]]
+```
+
+
+
+如果想取消多行注释，只需要在第一个--之前在加一个-即可，如：
+
+```
+---[[
+	注释内容
+	注释内容
+--]]
+```
+
+
+
+
+
+#### 标识符
+
+Lua定义变量名以一个字母 A 到 Z 或 a 到 z 或下划线 _ 开头后加上0个或多个字母，下划线，数字（0到9）。这块建议大家最好不要使用下划线加大写字母的标识符，因为Lua的保留字也是这样定义的，容易发生冲突。注意Lua是区分大小写字母的
+
+
+
+
+
+#### 关键字
+
+|   and    | break |  do   |  else  |
+| :------: | :---: | :---: | :----: |
+|  elseif  |  end  | false |  for   |
+| function |  if   |  in   | local  |
+|   nil    |  not  |  or   | repeat |
+|  return  | then  | true  | until  |
+|  while   | goto  |       |        |
+
+
+
+
+
+#### 运算符
+
+Lua中支持的运算符有算术运算符、关系运算符、逻辑运算符、其他运算符
+
+
+
+算术运算符：
+
+```sh
++   加法
+-	减法
+*	乘法
+/	除法
+%	取余
+^	乘幂
+-	负号
+```
+
+
+
+```sh
+> 9+7
+16
+> 257-32
+225
+> 6*50
+300
+> 60/5
+12.0
+> 31%5
+1
+> 2^7
+128.0
+> -54
+-54
+>
+```
+
+
+
+关系运算符：
+
+```sh
+==	等于
+~=	不等于
+>	大于
+<	小于
+>=	大于等于
+<=	小于等于
+```
+
+
+
+```sh
+> 1==1
+true
+> 2==2.4
+false
+> 2~=2
+false
+> 3.5~=4
+true
+> 3>2
+true
+> 4>6
+false
+> 2<1
+false
+> 3<5
+true
+> 2>=2
+true
+> 2>=4
+false
+> 4<=4
+true
+>
+```
+
+
+
+逻辑运算符：
+
+```sh
+and	逻辑与	 A and B     &&   
+or	逻辑或	 A or B     ||
+not	逻辑非  取反，如果为true,则返回false  !
+```
+
+
+
+
+
+```sh
+..	连接两个字符串
+#	一元预算法，返回字符串或表的长度
+```
+
+
+
+```sh
+> "abc".."de"
+abcde
+> #"1234567"
+7
+>
+```
+
+
+
+
+
+
+
+
+
+#### 全局变量和局部变量
+
+
+
