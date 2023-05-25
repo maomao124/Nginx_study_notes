@@ -11325,3 +11325,243 @@ table
 
 
 
+#### function
+
+在 Lua语言中，函数（ Function ）是对语句和表达式进行抽象的主要方式
+
+定义函数的语法为：
+
+```sh
+function functionName(params)
+
+end
+```
+
+
+
+```sh
+> function f()
+>> print("hello")
+>> print(" - world")
+>> end
+>
+> f()
+hello
+ - world
+>
+```
+
+
+
+参数传递
+
+```sh
+> function f(a,b)
+>> print(a.."---"..b)
+>> end
+> f()
+stdin:2: attempt to concatenate a nil value (local 'b')
+stack traceback:
+        stdin:2: in function 'f'
+        (...tail calls...)
+        [C]: in ?
+> f(1,2)
+1---2
+> f(1,2,3)
+1---2
+> f(1)
+stdin:2: attempt to concatenate a nil value (local 'b')
+stack traceback:
+        stdin:2: in function 'f'
+        (...tail calls...)
+        [C]: in ?
+>
+```
+
+
+
+
+
+可变长参数函数
+
+```sh
+> function f(...)
+>> print(...)
+>> end
+>
+> f(1,2,3)
+1       2       3
+> f(1,2)
+1       2
+> f(1,2,3,5,7,"hello")
+1       2       3       5       7       hello
+> f("21")
+21
+> f()
+
+>
+```
+
+
+
+
+
+函数返回值可以有多个
+
+```sh
+> function f(a,b)
+>> return b,a,(a+b);
+>> end
+>
+> print(f(1,3))
+3       1       4
+> print(f(4,3))
+3       4       7
+> print(f(7,2))
+2       7       9
+> print(f(21,43))
+43      21      64
+>
+```
+
+
+
+
+
+#### thread
+
+thread翻译过来是线程的意思，在Lua中，thread用来表示执行的独立线路，用来执行协同程序
+
+
+
+#### userdata
+
+userdata是一种用户自定义数据，用于表示一种由应用程序或C/C++语言库所创建的类型
+
+
+
+
+
+
+
+#### Lua控制结构
+
+Lua 语言提供了一组精简且常用的控制结构，包括用于条件执行的证 以及用于循环的 while、 repeat 和 for。 所有的控制结构语法上都有一个显式的终结符： end 用于终结 if、 for 及 while 结构， until 用于终结 repeat 结构。
+
+
+
+#### if then elseif else
+
+if语句先测试其条件，并根据条件是否满足执行相应的 then 部分或 else 部分。 else 部分 是可选的
+
+
+
+```sh
+> function f(a,b)
+>> if a>3 then
+>> print("a>3")
+>> end
+>> end
+>
+> f(1,2)
+> f(4,2)
+a>3
+>
+```
+
+```sh
+> function f(a,b)
+>> if a>3 then
+>> print("a>3")
+>> else
+>> print("a<=3")
+>> end
+>> end
+>
+> f(4,2)
+a>3
+> f(2,2)
+a<=3
+> f(3,2)
+a<=3
+>
+```
+
+
+
+如果要编写嵌套的 if 语句，可以使用 elseif。 它类似于在 else 后面紧跟一个if
+
+```sh
+> function show(age)
+>> if age<=18 then
+>>  return "青少年"
+>> elseif age>18 and age<=45 then
+>>  return "青年"
+>> elseif age>45 and age<=60 then
+>>  return "中年人"
+>> elseif age>60 then
+>>  return "老年人"
+>> end
+>> end
+>
+> show(14)
+青少年
+> show(19)
+青年
+> show(43)
+青年
+> show(47)
+中年人
+> show(76)
+老年人
+>
+```
+
+
+
+
+
+#### while循环
+
+当条件为真时 while 循环会重复执行其循环体。 Lua 语言先测试 while 语句 的条件，若条件为假则循环结束；否则， Lua 会执行循环体并不断地重复这个过程
+
+语法：
+
+```sh
+while 条件 do
+  循环体
+end
+```
+
+
+
+```sh
+> function f(a)
+>> while a>0 do
+>> print(a)
+>> a=a-1
+>> end
+>> end
+>
+> f(3)
+3
+2
+1
+> f(2)
+2
+1
+> f(5)
+5
+4
+3
+2
+1
+>
+```
+
+
+
+
+
+#### repeat循环
+
