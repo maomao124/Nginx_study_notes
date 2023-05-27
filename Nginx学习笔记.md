@@ -11763,3 +11763,168 @@ a---a1
 
 
 ## ngx_lua模块
+
+淘宝开发的ngx_lua模块通过将lua解释器集成进Nginx，可以采用lua脚本实现业务逻辑，由于lua的紧凑、快速以及内建协程，所以在保证高并发服务能力的同时极大地降低了业务逻辑实现成本。
+
+
+
+### 安装
+
+有两种方式安装，第一种为直接安装，第二种为OpenRestry安装
+
+
+
+#### lua-nginx-module
+
+LuaJIT是采用C语言编写的Lua代表的解释器，需要下载LuaJIT
+
+下载：http://luajit.org/  或者http://luajit.org/download/LuaJIT-2.0.5.tar.gz
+
+将下载的资源进行解压: tar -zxf LuaJIT-2.0.5.tar.gz
+
+进入解压的目录: cd LuaJIT-2.0.5
+
+执行编译和安装: make && make install
+
+
+
+下载lua-nginx-module
+
+https://github.com/openresty/lua-nginx-module
+
+将下载的资源进行解压: tar -zxf lua-nginx-module-0.10.16rc4.tar.gz
+
+更改目录名:mv lua-nginx-module-0.10.16rc4 lua-nginx-module
+
+导入环境变量
+
+```sh
+export LUAJIT_LIB=/usr/local/lib
+export LUAJIT_INC=/usr/local/include/luajit-2.0
+```
+
+进入Nginx的目录执行如下命令：
+
+```sh
+./configure --prefix=/usr/local/nginx --add-module=../lua-nginx-module
+make && make install
+```
+
+
+
+
+
+#### OpenRestry
+
+OpenResty是一个基于Nginx与 Lua 的高性能 Web 平台，其内部集成了大量精良的 Lua 库、第三方模块以及大多数的依赖项。用于方便地搭建能够处理超高并发、扩展性极高的动态 Web 应用、Web 服务和动态网关。所以本身OpenResty内部就已经集成了Nginx和Lua
+
+网站：http://openresty.org/en/
+
+中文网站：http://openresty.org/cn/
+
+下载页：http://openresty.org/cn/download.html
+
+
+
+下载并安装完成后，启动nginx，访问http://localhost/
+
+![image-20230527133220670](img/Nginx学习笔记/image-20230527133220670.png)
+
+
+
+
+
+
+
+
+
+### ngx_lua的使用
+
+使用Lua编写Nginx脚本的基本构建块是指令。指令用于指定何时运行用户Lua代码以及如何使用结果。
+
+![image-20230527133411747](img/Nginx学习笔记/image-20230527133411747.png)
+
+
+
+
+
+#### \*
+
+* \*：无 ， 即 xxx_by_lua ,指令后面跟的是 lua指令
+* \*:_file，即 xxx_by_lua_file 指令后面跟的是 lua文件
+* *:_block,即 xxx_by_lua_block 在0.9.17版后替换init_by_lua_file
+
+
+
+
+
+#### init_by_lua*
+
+该指令在每次Nginx重新加载配置时执行，可以用来完成一些耗时模块的加载，或者初始化一些全局配置
+
+
+
+#### init_worker_by_lua*
+
+该指令用于启动一些定时任务，如心跳检查、定时拉取服务器配置等
+
+
+
+#### set_by_lua*
+
+该指令只要用来做变量赋值，这个指令一次只能返回一个值，并将结果赋值给Nginx中指定的变量
+
+
+
+#### rewrite_by_lua*
+
+该指令用于执行内部URL重写或者外部重定向，典型的如伪静态化URL重写，本阶段在rewrite处理阶段的最后默认执行
+
+
+
+#### access_by_lua*
+
+该指令用于访问控制。例如，如果只允许内网IP访问
+
+
+
+#### content_by_lua*
+
+该指令是应用最多的指令，大部分任务是在这个阶段完成的，其他的过程往往为这个阶段准备数据，正式处理基本都在本阶段
+
+
+
+#### header_filter_by_lua*
+
+该指令用于设置应答消息的头部信息
+
+
+
+#### body_filter_by_lua*
+
+该指令是对响应数据进行过滤，如截断、替换
+
+
+
+#### log_by_lua*
+
+该指令用于在log请求处理阶段，用Lua代码处理日志，但并不替换原有log处理
+
+
+
+#### balancer_by_lua*
+
+该指令主要的作用是用来实现上游服务器的负载均衡器算法
+
+
+
+#### ssl_certificate_by_*
+
+该指令作用在Nginx和下游服务开始一个SSL握手操作时将允许本配置项的Lua代码
+
+
+
+
+
+
+
