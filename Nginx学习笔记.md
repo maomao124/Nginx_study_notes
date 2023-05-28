@@ -11928,3 +11928,158 @@ OpenResty是一个基于Nginx与 Lua 的高性能 Web 平台，其内部集成�
 
 
 
+### 使用
+
+#### 需求
+
+* 有以下网址：http://127.0.0.1?name=张三&gender=1
+* Nginx接收到请求后，根据gender传入的值，如果gender传入的是1，则在页面上展示张三先生
+* 如果gender传入的是0，则在页面上展示张三女士
+* 如果未传或者传入的不是1和2则在页面上展示张三
+* 在响应头添加OpenRestry=OpenRestry yes
+
+
+
+
+
+#### 实现
+
+修改conf目录下的nginx.conf文件
+
+```sh
+
+#user  nobody;
+worker_processes  1;
+
+#error_log  logs/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+#pid        logs/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+    #access_log  logs/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        charset utf-8;
+
+        #access_log  logs/host.access.log  main;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+
+location /getByGender {
+	default_type 'text/html';
+	set_by_lua $name "
+		local uri_args = ngx.req.get_uri_args()
+		gender = uri_args['gender']
+		name = uri_args['name']
+		if gender=='1' then
+			return name..'先生'
+		elseif gender=='0' then
+			return name..'女士'
+		else
+			return name
+		end
+	";
+	header_filter_by_lua "
+		ngx.header.OpenRestry='OpenRestry yes'
+	";
+	return 200 $name;
+}
+
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+}
+
+```
+
+
+
+校验并重新加载
+
+```sh
+PS D:\opensoft\openresty-1.21.4.1> ./nginx -t
+nginx: the configuration file ./conf/nginx.conf syntax is ok
+nginx: configuration file ./conf/nginx.conf test is successful
+PS D:\opensoft\openresty-1.21.4.1> ./nginx -s reload
+PS D:\opensoft\openresty-1.21.4.1>
+```
+
+
+
+访问
+
+[127.0.0.1/getByGender?name=张三&gender=1](http://127.0.0.1/getByGender?name=张三&gender=1)
+
+![image-20230527135923287](img/Nginx学习笔记/image-20230527135923287.png)
+
+
+
+[127.0.0.1/getByGender?name=张三&gender=0](http://127.0.0.1/getByGender?name=张三&gender=0)
+
+![image-20230527135946559](img/Nginx学习笔记/image-20230527135946559.png)
+
+
+
+[127.0.0.1/getByGender?name=张三&gender=2](http://127.0.0.1/getByGender?name=张三&gender=2)
+
+![image-20230527140001554](img/Nginx学习笔记/image-20230527140001554.png)
+
+
+
+[127.0.0.1/getByGender?name=李四&gender=1](http://127.0.0.1/getByGender?name=李四&gender=1)
+
+![image-20230527140036200](img/Nginx学习笔记/image-20230527140036200.png)
+
+
+
+响应头信息：
+
+![image-20230527140134320](img/Nginx学习笔记/image-20230527140134320.png)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## ngx_lua操作Redis
+
