@@ -12083,3 +12083,354 @@ PS D:\opensoft\openresty-1.21.4.1>
 
 ## ngx_lua操作Redis
 
+### 概述
+
+Redis在系统中经常作为数据缓存、内存数据库使用，在大型系统中扮演着非常重要的作用。在Nginx核心系统中，Redis是常备组件。Nginx支持3种方法访问Redis,分别是HttpRedis模块、HttpRedis2Module、lua-resty-redis库。这三种方式中HttpRedis模块提供的指令少，功能单一，适合做简单缓存，HttpRedis2Module模块比HttpRedis模块操作更灵活，功能更强大。而Lua-resty-redis库是OpenResty提供的一个操作Redis的接口库，可根据自己的业务情况做一些逻辑处理，适合做复杂的业务逻辑。
+
+
+
+
+
+### lua-resty-redis API
+
+第一步，导包
+
+```lua
+redis = require "resty.redis"
+```
+
+
+
+第二步，创建一个Redis对象
+
+```lua
+redis,err = redis:new()
+```
+
+
+
+第三步，连接Redis
+
+```sh
+ok,err=redis:connect(host,port[,options_table])
+```
+
+* ok:连接成功返回 1，连接失败返回nil
+* err:返回对应的错误信息
+
+
+
+第四步，设置超时时间
+
+```lua
+redis:set_timeout(time)
+```
+
+
+
+第五步，操作redis
+
+在lua-resty-redis中，所有的Redis命令都有自己的方法，方法名字和命令名字相同，只是全部为小写
+
+例如：
+
+```lua
+local res,err = redisObj:get("key")
+```
+
+
+
+第六步，关闭连接
+
+```lua
+ok,err = redis:close()
+```
+
+
+
+
+
+
+
+### 使用
+
+#### 需求
+
+* 在/set?key=123&valve=456的url中，需要将key为123，value为456的键值对存入redis中，如果成功，并在页面中返回OK
+* 在/get?key=123的url中，需要将key为123的值从redis里取出，并写入到页面中
+
+
+
+#### 实现
+
+set相关：
+
+```lua
+location /set {
+    default_type "text/html";
+    content_by_lua_block{
+        local redis = require "resty.redis" -- 引入Redis
+        redis,err = redis:new()   --创建Redis对象
+        redis:set_timeout(1000) --设置超时数据为1s
+        local ok,err = redis:connect("127.0.0.1",6379) --设置redis连接信息
+        if not ok then --判断是否连接成功
+            ngx.say("redis连接失败！",err)
+            return
+          end
+        local uri_args = ngx.req.get_uri_args()
+        key = uri_args['key']
+        value = uri_args['value']
+        if key==nil then
+            ngx.say("key 不存在！")
+            return
+          end
+        if value==nil then
+            ngx.say("value 不存在！")
+            return
+          end
+        ok,err = redis:auth("123456")
+        if not ok then
+          ngx.say("密码校验失败！",err)
+            return
+          end
+        ok,err = redis:set(key,value)  --存入数据
+        if not ok then --判断是否存入成功
+            ngx.say("数据存入失败！",err)
+            return
+          end
+        ngx.say("OK")
+        redis:close()  --关闭连接
+    }
+    
+}
+```
+
+
+
+get相关：
+
+```lua
+location /get {
+    default_type "text/html";
+    content_by_lua_block{
+        local redis = require "resty.redis" -- 引入Redis
+        redis,err = redis:new()   --创建Redis对象
+        redis:set_timeout(1000) --设置超时数据为1s
+        local ok,err = redis:connect("127.0.0.1",6379) --设置redis连接信息
+        if not ok then --判断是否连接成功
+            ngx.say("redis连接失败！",err)
+            return
+          end
+        local uri_args = ngx.req.get_uri_args()
+        key = uri_args['key']
+        if key==nil then
+            ngx.say("key 不存在！")
+            return
+          end
+        ok,err = redis:auth("123456")
+        if not ok then
+          ngx.say("密码校验失败！",err)
+            return
+          end
+        res,err = redis:get(key)  --从redis中获取数据
+        if err~=nil then --判断是否读取成功
+            ngx.say("数据获取失败！",err)
+            return
+          end
+        ngx.say(res) --将数据写会消息体中
+        redis:close()  --关闭连接
+    }
+    
+}
+```
+
+
+
+
+
+nginx配置文件：
+
+```sh
+
+#user  nobody;
+worker_processes  1;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        charset utf-8;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+
+location /set {
+    default_type "text/html";
+    content_by_lua_block{
+        local redis = require "resty.redis" -- 引入Redis
+        redis,err = redis:new()   --创建Redis对象
+        redis:set_timeout(1000) --设置超时数据为1s
+        local ok,err = redis:connect("127.0.0.1",6379) --设置redis连接信息
+        if not ok then --判断是否连接成功
+            ngx.say("redis连接失败！",err)
+            return
+          end
+        local uri_args = ngx.req.get_uri_args()
+        key = uri_args['key']
+        value = uri_args['value']
+        if key==nil then
+            ngx.say("key 不存在！")
+            return
+          end
+        if value==nil then
+            ngx.say("value 不存在！")
+            return
+          end
+        ok,err = redis:auth("123456")
+        if not ok then
+          ngx.say("密码校验失败！",err)
+            return
+          end
+        ok,err = redis:set(key,value)  --存入数据
+        if not ok then --判断是否存入成功
+            ngx.say("数据存入失败！",err)
+            return
+          end
+        ngx.say("OK")
+        redis:close()  --关闭连接
+    }
+    
+}
+
+
+location /get {
+    default_type "text/html";
+    content_by_lua_block{
+        local redis = require "resty.redis" -- 引入Redis
+        redis,err = redis:new()   --创建Redis对象
+        redis:set_timeout(1000) --设置超时数据为1s
+        local ok,err = redis:connect("127.0.0.1",6379) --设置redis连接信息
+        if not ok then --判断是否连接成功
+            ngx.say("redis连接失败！",err)
+            return
+          end
+        local uri_args = ngx.req.get_uri_args()
+        key = uri_args['key']
+        if key==nil then
+            ngx.say("key 不存在！")
+            return
+          end
+        ok,err = redis:auth("123456")
+        if not ok then
+          ngx.say("密码校验失败！",err)
+            return
+          end
+        res,err = redis:get(key)  --从redis中获取数据
+        if err~=nil then --判断是否读取成功
+            ngx.say("数据获取失败！",err)
+            return
+          end
+        ngx.say(res) --将数据写会消息体中
+        redis:close()  --关闭连接
+    }
+    
+}
+
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+            root   html;
+        }
+    }
+}
+
+```
+
+
+
+
+
+校验并启动：
+
+```sh
+PS D:\opensoft\openresty-1.21.4.1> ./nginx -t
+nginx: the configuration file ./conf/nginx.conf syntax is ok
+nginx: configuration file ./conf/nginx.conf test is successful
+PS D:\opensoft\openresty-1.21.4.1> ./nginx
+```
+
+
+
+
+
+[localhost/set?key=hello123](http://localhost/set?key=hello123)
+
+![image-20230528155618452](img/Nginx学习笔记/image-20230528155618452.png)
+
+
+
+
+
+![image-20230528155643868](img/Nginx学习笔记/image-20230528155643868.png)
+
+
+
+![image-20230528155701280](img/Nginx学习笔记/image-20230528155701280.png)
+
+
+
+
+
+[localhost/get](http://localhost/get)
+
+![image-20230528155742873](img/Nginx学习笔记/image-20230528155742873.png)
+
+
+
+[localhost/get?key=hello123](http://localhost/get?key=hello123)
+
+![image-20230528155805681](img/Nginx学习笔记/image-20230528155805681.png)
+
+[localhost/get?key=hello](http://localhost/get?key=hello)
+
+![image-20230528155836655](img/Nginx学习笔记/image-20230528155836655.png)
+
+
+
+http://localhost/set?key=hello&value=hello!!!
+
+![image-20230528155918684](img/Nginx学习笔记/image-20230528155918684.png)
+
+[localhost/get?key=hello](http://localhost/get?key=hello)
+
+![image-20230528155944099](img/Nginx学习笔记/image-20230528155944099.png)
+
+
+
+
+
+
+
+
+
+
+
+## ngx_lua操作Mysql
+
