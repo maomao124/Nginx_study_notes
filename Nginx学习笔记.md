@@ -12434,3 +12434,159 @@ http://localhost/set?key=hello&value=hello!!!
 
 ## ngx_lua操作Mysql
 
+### 概述
+
+MySQL是一个使用广泛的关系型数据库。在ngx_lua中，MySQL有两种访问模式：
+
+* 用ngx_lua模块和lua-resty-mysql模块：这两个模块是安装OpenResty时默认安装的
+* 使用drizzle_nginx_module(HttpDrizzleModule)模块：需要单独安装，这个库现不在OpenResty中
+
+
+
+
+
+### lua-resty-mysql API
+
+lua-resty-mysql是OpenResty开发的模块，使用灵活、功能强大，适合复杂的业务场景，同时支持存储过程的访问
+
+
+
+第一步：引入"resty.mysql"模块
+
+```lua
+local mysql = require "resty.mysql"
+```
+
+
+
+第二步：创建一个MySQL连接对象
+
+```lua
+db,err = mysql:new()
+```
+
+遇到错误时，db为nil，err为错误描述信息
+
+
+
+第三步：连接
+
+```lua
+ok,err=db:connect(options)
+```
+
+options是一个参数的Lua表结构，里面包含数据库连接的相关信息
+
+* host:服务器主机名或IP地址
+* port:服务器监听端口，默认为3306
+* user:登录的用户名
+* password:登录密码
+* database:使用的数据库名
+
+
+
+第四步：设置子请求的超时时间
+
+```lua
+db:set_timeout(time)
+```
+
+
+
+
+
+第五步：操作数据库
+
+查询：
+
+```sh
+bytes,err=db:send_query(sql)
+```
+
+异步向远程MySQL发送一个查询。如果成功则返回成功发送的字节数；如果错误，则返回nil和错误描述
+
+
+
+从MySQL服务器返回结果中读取一行数据：
+
+```lua
+res, err, errcode, sqlstate = db:read_result()
+res, err, errcode, sqlstate = db:read_result(rows)
+```
+
+rows指定返回结果集的最大值，默认为4
+
+如果是查询，则返回一个容纳多行的数组。每行是一个数据列的key-value对，如
+
+```sh
+    {
+      {id=1,username="TOM",birthday="1988-11-11",salary=10000.0},
+      {id=2,username="JERRY",birthday="1989-11-11",salary=20000.0}
+    }
+```
+
+如果是增删改，则返回类上如下数据：
+
+```sh
+{
+    	insert_id = 0,
+    	server_status=2,
+    	warning_count=1,
+    	affected_rows=2,
+    	message=nil
+    }
+```
+
+返回值：
+
+* res:操作的结果集
+* err:错误信息
+* errcode:MySQL的错误码，比如1064
+* sqlstate:返回由5个字符组成的标准SQL错误码，比如42000
+
+
+
+
+
+第六步：关闭当前MySQL连接
+
+```lua
+db:close()
+```
+
+
+
+
+
+### lua-cjson处理查询结果
+
+read_result()得到的结果res都是table类型，要想在页面上展示，就必须知道table的具体数据结构才能进行遍历获取。处理起来比较麻烦
+
+可以使用cjson，使用它就可以将table类型的数据转换成json字符串，把json字符串展示在页面上即可
+
+
+
+第一步：引入cjson
+
+```lua
+local cjson = require "cjson"
+```
+
+
+
+第二步：调用cjson的encode方法进行类型转换
+
+```lua
+cjson.encode(res)
+```
+
+
+
+
+
+
+
+### 使用
+
+#### 需求
+
