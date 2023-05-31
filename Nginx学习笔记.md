@@ -12590,3 +12590,319 @@ cjson.encode(res)
 
 #### 需求
 
+数据库：
+
+```sql
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+CREATE DATABASE student;
+use student;
+
+-- ----------------------------
+-- Table structure for information
+-- ----------------------------
+DROP TABLE IF EXISTS `information`;
+CREATE TABLE `information`  (
+  `no` int NOT NULL AUTO_INCREMENT,
+  `name` char(20) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL,
+  `sex` char(4) CHARACTER SET utf8mb3 COLLATE utf8mb3_general_ci NULL DEFAULT NULL,
+  `age` int NULL DEFAULT NULL,
+  PRIMARY KEY (`no`) USING BTREE,
+  UNIQUE INDEX `information_no_uindex`(`no`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 25 CHARACTER SET = utf8mb3 COLLATE = utf8mb3_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of information
+-- ----------------------------
+INSERT INTO `information` VALUES (1, '张三', '男', 18);
+INSERT INTO `information` VALUES (2, '李四', '男', 19);
+INSERT INTO `information` VALUES (3, '王五', '女', 17);
+INSERT INTO `information` VALUES (4, '赵六', '男', 11);
+INSERT INTO `information` VALUES (6, '王琦', '女', 19);
+INSERT INTO `information` VALUES (7, '赵七', '男', 20);
+INSERT INTO `information` VALUES (8, '张四', '男', 22);
+INSERT INTO `information` VALUES (9, '王武', '男', 21);
+INSERT INTO `information` VALUES (10, '张六', '男', 19);
+INSERT INTO `information` VALUES (11, '张琪', '女', 18);
+
+SET FOREIGN_KEY_CHECKS = 1;
+```
+
+
+
+* /query接口，查询所有
+* /queryById?id=13接口，查询学号（NO）为13的学生信息
+
+
+
+
+
+
+
+#### 实现
+
+query接口
+
+```lua
+location /query {
+    default_type "text/html";
+    content_by_lua_block{
+        local mysql = require "resty.mysql"
+        local cjson = require "cjson"
+        
+        local db = mysql:new() --构建对象
+        
+        local ok,err = db:connect  --连接
+        {
+            host="127.0.0.1",
+            port=3306,
+            user="root",
+            password="20010713",
+            database="student"
+        }
+        if not ok then --判断是否连接成功
+            ngx.say("MySQL连接失败！",err)
+            return
+          end
+        
+        db:set_timeout(1000) --设置超时时间
+        
+        db:send_query("select * from information") --发送sql语句
+        local res,err,errcode,sqlstate = db:read_result() --读取结果
+        if err~=nil then --判断是否读取成功
+            ngx.say("数据获取失败！",err)
+            return
+          end
+        ngx.say(cjson.encode(res)) --将数据转json写入消息体中
+        db:close()  --关闭连接
+    }
+    
+}
+```
+
+
+
+queryById接口：
+
+```lua
+location /queryById {
+    default_type "text/html";
+    content_by_lua_block{
+        local mysql = require "resty.mysql"
+        local cjson = require "cjson"
+        
+        local db = mysql:new() --构建对象
+        
+        local ok,err = db:connect  --连接
+        {
+            host="127.0.0.1",
+            port=3306,
+            user="root",
+            password="20010713",
+            database="student"
+        }
+        if not ok then --判断是否连接成功
+            ngx.say("MySQL连接失败！",err)
+            return
+          end
+        
+        db:set_timeout(1000) --设置超时时间
+        
+        local uri_args = ngx.req.get_uri_args()
+        id = uri_args['id']
+        if id==nil then
+            ngx.say("id 不存在！")
+            return
+          end
+        
+        db:send_query("select * from information where no="..id) --发送sql语句，忽视sql注入
+        local res,err,errcode,sqlstate = db:read_result() --读取结果
+        if err~=nil then --判断是否读取成功
+            ngx.say("数据获取失败！",err)
+            return
+          end
+        ngx.say(cjson.encode(res)) --将数据转json写入消息体中
+        db:close()  --关闭连接
+    }
+    
+}
+```
+
+
+
+
+
+nginx配置文件：
+
+```sh
+
+#user  nobody;
+worker_processes  1;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        charset utf-8;
+
+        location / {
+            root   html;
+            index  index.html index.htm;
+        }
+
+location /query {
+    default_type "text/html";
+    content_by_lua_block{
+        local mysql = require "resty.mysql"
+        local cjson = require "cjson"
+        
+        local db = mysql:new() --构建对象
+        
+        local ok,err = db:connect  --连接
+        {
+            host="127.0.0.1",
+            port=3306,
+            user="root",
+            password="20010713",
+            database="student"
+        }
+        if not ok then --判断是否连接成功
+            ngx.say("MySQL连接失败！",err)
+            return
+          end
+        
+        db:set_timeout(1000) --设置超时时间
+        
+        db:send_query("select * from information") --发送sql语句
+        local res,err,errcode,sqlstate = db:read_result() --读取结果
+        if err~=nil then --判断是否读取成功
+            ngx.say("数据获取失败！",err)
+            return
+          end
+        ngx.say(cjson.encode(res)) --将数据转json写入消息体中
+        db:close()  --关闭连接
+    }
+    
+}
+
+
+location /queryById {
+    default_type "text/html";
+    content_by_lua_block{
+        local mysql = require "resty.mysql"
+        local cjson = require "cjson"
+        
+        local db = mysql:new() --构建对象
+        
+        local ok,err = db:connect  --连接
+        {
+            host="127.0.0.1",
+            port=3306,
+            user="root",
+            password="20010713",
+            database="student"
+        }
+        if not ok then --判断是否连接成功
+            ngx.say("MySQL连接失败！",err)
+            return
+          end
+        
+        db:set_timeout(1000) --设置超时时间
+        
+        local uri_args = ngx.req.get_uri_args()
+        id = uri_args['id']
+        if id==nil then
+            ngx.say("id 不存在！")
+            return
+          end
+        
+        db:send_query("select * from information where no="..id) --发送sql语句，忽视sql注入
+        local res,err,errcode,sqlstate = db:read_result() --读取结果
+        if err~=nil then --判断是否读取成功
+            ngx.say("数据获取失败！",err)
+            return
+          end
+        ngx.say(cjson.encode(res)) --将数据转json写入消息体中
+        db:close()  --关闭连接
+    }
+    }
+ }
+}
+```
+
+
+
+
+
+校验并启动
+
+```sh
+PS D:\opensoft\openresty-1.21.4.1> ./nginx -t
+nginx: the configuration file ./conf/nginx.conf syntax is ok
+nginx: configuration file ./conf/nginx.conf test is successful
+PS D:\opensoft\openresty-1.21.4.1> ./nginx
+```
+
+
+
+访问
+
+http://localhost/query
+
+![image-20230531210122818](img/Nginx学习笔记/image-20230531210122818.png)
+
+
+
+```json
+[{"age":18,"name":"张三","no":1,"sex":"男"},{"age":19,"name":"李四","no":2,"sex":"男"},{"age":17,"name":"王五","no":3,"sex":"女"},{"age":11,"name":"赵六","no":4,"sex":"男"},{"age":19,"name":"王琦","no":6,"sex":"女"},{"age":20,"name":"赵七","no":7,"sex":"男"},{"age":22,"name":"张四","no":8,"sex":"男"},{"age":21,"name":"王武","no":9,"sex":"男"},{"age":19,"name":"张六","no":10,"sex":"男"},{"age":18,"name":"张琪","no":11,"sex":"女"}]
+```
+
+
+
+
+
+http://localhost/queryById?id=1
+
+![image-20230531210210596](img/Nginx学习笔记/image-20230531210210596.png)
+
+http://localhost/queryById?id=2
+
+![image-20230531210220164](img/Nginx学习笔记/image-20230531210220164.png)
+
+http://localhost/queryById?id=3
+
+![image-20230531210242849](img/Nginx学习笔记/image-20230531210242849.png)
+
+
+
+http://localhost/queryById?id=555
+
+![image-20230531210259842](img/Nginx学习笔记/image-20230531210259842.png)
+
+
+
+
+
+
+
+
+
+
+
